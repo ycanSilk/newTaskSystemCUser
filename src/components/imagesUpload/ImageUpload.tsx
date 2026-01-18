@@ -121,7 +121,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
         {Array.from({ length: maxCount }).map((_, index) => (
           <div 
             key={index} 
-            className={`image-upload-item relative border-2 border-dashed rounded-lg flex items-center justify-center transition-all duration-300 ${images[index] ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'}`}
+            className={`image-upload-item relative border-2 border-dashed rounded-lg flex items-center justify-center transition-all duration-300 ${images[index] ? 'border-blue-500 bg-blue-50' : 'border-gray-500 hover:border-blue-500 hover:bg-blue-50'}`}
             style={{ width: itemWidth, height: itemHeight }}
           >
             {/* 已上传图片显示 */}
@@ -147,8 +147,8 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
             ) : (
               /* 空槽位上传按钮 */
               <label className="upload-label w-full h-full flex flex-col items-center justify-center cursor-pointer">
-                <span className="upload-icon text-4xl font-light text-gray-400 mb-2">+</span>
-                <span className="upload-text text-sm text-gray-500">点击上传图片</span>
+                <span className="upload-icon text-4xl font-light text-gray-500 hover:text-blue-500 mb-2">+</span>
+                <span className="upload-text text-sm text-gray-500 hover:text-blue-500">点击上传图片</span>
                 <input
                   type="file"
                   accept="image/jpeg,image/png"
