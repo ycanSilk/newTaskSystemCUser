@@ -2,16 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { LoginFormData, LoginRequest, LoginApiResponse } from '../../../types/auth/loginTypes';
 
 
 const getCommenterHomePath = () => '/commenter/hall';
-// 定义登录表单数据类型
-interface LoginFormData {
-  username: string;
-  password: string;
-  captcha: string;
-}
-
 // 表单验证规则
 const validationRules = {
   username: {
@@ -35,8 +29,8 @@ const validationRules = {
 
 export default function CommenterLoginPage() {
   const [formData, setFormData] = useState<LoginFormData>({
-    username: 'jdceshi',
-    password: '123456',
+    username: '',
+    password: '',
     captcha: ''
   });
   const [captchaCode, setCaptchaCode] = useState('');
@@ -128,8 +122,8 @@ export default function CommenterLoginPage() {
     // 设置默认测试账号信息
     setFormData(prev => ({
       ...prev,
-      username: 'jdceshi',
-      password: '123456',
+      username: '',
+      password: '',
       // captcha 不自动填充
     }));
   }, []); // 只在组件挂载时设置一次
@@ -194,56 +188,44 @@ export default function CommenterLoginPage() {
     setIsLoading(true);
     const startTime = Date.now();
     try {
+      // 调用登录API
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          username: formData.username.trim(),
-          password: formData.password,
-          captcha: formData.captcha // 新增验证码参数
-        }),
+          account: formData.username.trim(), // 转换为后端需要的account字段
+          password: formData.password
+        } as LoginRequest),
         signal: AbortSignal.timeout(10000),
-        credentials: 'include' // 关键设置，允许浏览器处理认证Cookie
+        credentials: 'include' // 允许浏览器处理认证Cookie
       });
       
-     
       const responseTime = Date.now() - startTime;
       setResponseTime(responseTime);
-      const data = await response.json();
+      
+      // 无论响应状态如何，都先解析JSON响应
+      const data: LoginApiResponse = await response.json();
+      console.log('登录响应数据:', data);
 
-      // 检查登录是否成功
-      if (response.ok && data.success) {
+      // 检查登录是否成功（使用code字段判断）
+      if (data.code === 0) {
         console.log('登录成功，完整响应数据:', data);
         
-        // 确保用户信息对象存在
-        const userInfo = data.data?.userInfo || {
-          username: data.data?.username || formData.username
-        };
-        
-        console.log('准备保存的用户信息:', userInfo);
-        
-        // 保存用户信息到localStorage
-        try {
-          localStorage.setItem('commenter_user_info', JSON.stringify(userInfo));
-          console.log('用户信息已成功保存到localStorage');
-          
-          // 验证保存是否成功
-          const savedUserInfoStr = localStorage.getItem('commenter_user_info');
-          const savedUserInfo = savedUserInfoStr ? JSON.parse(savedUserInfoStr) : null;
-          console.log('从localStorage读取的用户信息:', savedUserInfo);
-        } catch (error) {
-          console.error('保存用户信息到localStorage失败:', error);
-        }
-      }
+        // 登录成功后1秒跳转到指定页面
+        setTimeout(() => {
+          // 获取重定向参数
+          const urlParams = new URLSearchParams(window.location.search);
+          const redirectPath = urlParams.get('redirect') || getCommenterHomePath();
+          router.push(redirectPath);
+          console.log(`登录成功，跳转到 ${redirectPath}`);
+        }, 1000);
 
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || `登录失败，状态码: ${response.status}`);
+      } else {
+        // 登录失败，显示API返回的错误信息
+        throw new Error(data.message || `登录失败`);
       }
-      setTimeout(() => {
-        router.push(getCommenterHomePath());
-      }, 300);
     } catch (error) {
       let errorMsg = '登录过程中出现错误，请稍后再试';
       const typedError = error as Error;

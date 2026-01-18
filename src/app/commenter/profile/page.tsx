@@ -185,7 +185,7 @@ export default function commenterProfilePage() {
         >
           <div className="flex items-center space-x-4">
             <div className="w-16 h-16 bg-white bg-opacity-20 rounded-lg flex items-center justify-center text-2xl">
-              <img src={userInfo?.avatar || '/images/0e92a4599d02a7.jpg'} alt="User Avatar" className="w-full h-full overflow-hidden rounded-lg" />
+              <img src={userInfo?.avatar || '/images/default.png'} alt="User Avatar" className="w-full h-full overflow-hidden rounded-lg" />
             </div>
             <div>
               <span className="flex font-bold text-lg items-center">

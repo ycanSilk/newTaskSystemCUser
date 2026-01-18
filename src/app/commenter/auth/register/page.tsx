@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import SuccessModal from '../../../../components/button/authButton/SuccessModal';
+import { RegisterRequest, RegisterResponse } from '../../../types/auth/registerTypes';
+
 
 export default function CommenterRegisterPage() {
   // 生成随机验证码
@@ -42,6 +44,18 @@ export default function CommenterRegisterPage() {
   useEffect(() => {
     setCaptchaCode(generateCaptcha());
   }, []);
+
+  // 注册成功后3秒自动跳转到登录页面
+  useEffect(() => {
+    if (showConfirmModal) {
+      const timer = setTimeout(() => {
+        router.push('/commenter/auth/login');
+      }, 3000);
+
+      // 清除定时器，避免内存泄漏
+      return () => clearTimeout(timer);
+    }
+  }, [showConfirmModal, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -169,26 +183,36 @@ export default function CommenterRegisterPage() {
           username: formData.username.trim(),
           password: formData.password,
           phone: formData.phone.trim(),
-          email: formData.email.trim() || undefined,
-          inviteCode: formData.inviteCode.trim() || undefined
-        }),
+          email: formData.email.trim() || '',
+          parent_invite_code: formData.inviteCode.trim() || ''
+        } as RegisterRequest),
         // 设置请求超时
-        signal: AbortSignal.timeout(5000)
+        signal: AbortSignal.timeout(3000)
       });
-
-      // 检查响应状态
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      console.log('请求url', '/api/auth/register');
+      console.log('请求体', {
+        username: formData.username.trim(),
+        password: formData.password,
+        phone: formData.phone.trim(),
+        email: formData.email.trim() || '',
+        parent_invite_code: formData.inviteCode.trim() || ''
+      });
+      console.log('响应状态:', response.status);
+      if(response.ok){
+        console.log('判断response.ok是不是true', response.ok);
       }
-
+      // 只调用一次response.json()，保存结果到变量
       const result = await response.json();
+      console.log('响应体:', result);
+      console.log('注册响应:', result);
       
-      if (result.success) {
+      if (result.code === 0) {
         // 注册成功
         setSuccessMessage(result.message || '注册成功！您的账号已创建，现在可以登录了。');
         // 显示确认提示框
         setShowConfirmModal(true);
       } else {
+        // 注册失败，显示API返回的错误信息
         setErrorMessage(result.message || '注册失败，请稍后重试');
         // 刷新验证码
         refreshCaptcha();
@@ -196,7 +220,7 @@ export default function CommenterRegisterPage() {
     } catch (error) {
       console.error('注册错误:', error);
       // 根据不同类型的错误提供更友好的提示
-      if (  error instanceof DOMException && error.name === 'AbortError') {
+      if (error instanceof DOMException && error.name === 'AbortError') {
         setErrorMessage('请求超时，请检查网络连接后重试');
       } else {
         setErrorMessage('注册过程中发生错误，请稍后重试');
@@ -218,16 +242,16 @@ export default function CommenterRegisterPage() {
       </div>
 
       {/* 主要内容区域 */}
-      <div className="flex-1 -mt-6 md:-mt-8">
+      <div className="flex-1 -mt-10">
         <div className="max-w-md mx-auto px-4">
           {/* 注册卡片 */}
-          <div className="bg-white rounded-lg shadow-lg p-4 md:p-6 mb-6">
+          <div className="bg-white rounded-lg shadow-lg py-2 px-5">
             <h3 className="text-2xl font-bold mb-3 text-center">注册</h3>
 
             {/* 注册表单 */}
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* 账号信息 */}
-              <div className="bg-blue-50 rounded-lg p-3 md:p-4">
+              <div className="bg-blue-50 rounded-lg p-3">
 
                 {/* 用户名 */}
                 <div className="mb-3">
@@ -328,7 +352,7 @@ export default function CommenterRegisterPage() {
               </div>
 
               {/* 邀请码 */}
-              <div className="bg-blue-50 rounded-lg p-3 md:p-4">
+              <div className="bg-blue-50 rounded-lg p-3">
                 <h3 className="text-sm font-bold text-blue-800 mb-3"> 邀请码（可选）</h3>
                 <div>
                   <input
@@ -399,8 +423,6 @@ export default function CommenterRegisterPage() {
               </p>
             </div>
           </div>
-
-          
 
           {/* 底部信息 */}
           <div className="text-center mb-8">

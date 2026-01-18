@@ -63,7 +63,7 @@ export async function GET(request: Request) {
     
     // 如果没有管理员token，再检查其他类型的token
     if (!token) {
-      const tokenKeys = ['commenter_token', 'publisher_token', 'user_token', 'auth_token', 'token'];
+      const tokenKeys = ['commenter_token', 'commenter_token', 'user_token', 'auth_token', 'token'];
       for (const key of tokenKeys) {
         token = cookieStore.get(key)?.value;
         if (token) break;

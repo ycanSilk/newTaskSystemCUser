@@ -5,97 +5,16 @@ import CoolingTimer from '@/components/timer/CoolingTimer';
 import { useRouter } from 'next/navigation';
 import { ClockCircleOutlined, WarningOutlined, CloseCircleOutlined, BulbOutlined, CheckCircleOutlined, DollarOutlined, MailOutlined, ReloadOutlined, LoadingOutlined } from '@ant-design/icons';
 import AlertModal from '../../../components/ui/AlertModal';
+import { TaskPoolListResponse, TaskPoolListItem } from '@/app/types/task/getTaskPoolList';
 
 export default function CommenterHallContentPage() {
   const [sortBy, setSortBy] = useState('time'); // 'time' | 'price'
   const [sortOrder, setSortOrder] = useState('desc'); // 'asc' | 'desc'
   const [isRefreshing, setIsRefreshing] = useState(false);
   const router = useRouter();
-  // API响应数据接口定义
-  interface ApiResponse {
-    code: number;
-    message: string;
-    data: {
-      list: Task[];
-      total: number;
-      page: number;
-      size: number;
-      pages: number;
-    };
-    success: boolean;
-    timestamp: number;
-  }
 
-  // 任务接口定义 - 与后端返回的数据格式完全匹配
-  interface Task {
-    id: string;
-    publisherId: string;
-    publisherName: string | null;
-    publisherAvatar: string | null;
-    title: string;
-    description: string;
-    platform: string;
-    taskType: string;
-    status: string;
-    totalQuantity: number;
-    completedQuantity: number;
-    availableCount: number;
-    unitPrice: number; // 使用后端返回的unitPrice字段
-    totalAmount: number;
-    deadline: string;
-    requirements: string;
-    publishedTime: string; // 使用后端返回的publishedTime字段
-    remainingHours: number | null;
-    remainingDays: number | null;
-    isUrgent: boolean | null;
-    isRecommended: boolean | null;
-    difficultyLevel: string | null;
-    estimatedTime: string | null;
-    publisherTaskCount: number | null;
-    publisherSuccessRate: number | null;
-    publisherRating: number | null;
-    publisherCompletedTasks: number | null;
-    todayCompletedCount: number | null;
-    totalAcceptedCount: number | null;
-    averageCompletionTime: number | null;
-    canAccept: boolean | null;
-    cannotAcceptReason: string | null;
-    dailyAcceptLimit: number | null;
-    todayAcceptedCount: number | null;
-    tags: string[] | null;
-    isNew: boolean | null;
-    isHot: boolean | null;
-    popularity: number | null;
-    hasBonus: boolean | null;
-    bonusAmount: number | null;
-    bonusCondition: string | null;
-    location: string | null;
-    distance: number | null;
-    category: string | null;
-    subCategory: string | null;
-    timeStatus: string | null;
-    isExpired: boolean | null;
-    isFull: boolean | null;
-    verifyRequirements: string | null;
-    verifyTimeLimit: number | null;
-    autoVerify: boolean | null;
-  }
-
-  // API请求参数接口
-  interface ApiRequestParams {
-    page: number;
-    size: number;
-    sortField: string;
-    sortOrder: string;
-    platform?: string;
-    taskType?: string;
-    minPrice?: number;
-    maxPrice?: number;
-    keyword?: string;
-  }
-
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [grabbingTasks, setGrabbingTasks] = useState(new Set<string>()); // 正在抢单的任务ID
+  const [tasks, setTasks] = useState<TaskPoolListItem[]>([]);
+  const [grabbingTasks, setGrabbingTasks] = useState(new Set<number>()); // 正在抢单的任务ID
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [isLoading, setIsLoading] = useState(true); // 加载状态
   const [error, setError] = useState<string | null>(null); // 错误状态
@@ -141,15 +60,15 @@ export default function CommenterHallContentPage() {
   };
 
   // 排序功能 - 使用正确的字段名
-  const sortTasks = (tasks: Task[], sortBy: string, sortOrder: string) => {
+  const sortTasks = (tasks: TaskPoolListItem[], sortBy: string, sortOrder: string) => {
     const sorted = [...tasks].sort((a, b) => {
       if (sortBy === 'time') {
-        const timeA = new Date(a.publishedTime).getTime();
-        const timeB = new Date(b.publishedTime).getTime();
+        const timeA = new Date(a.created_at).getTime();
+        const timeB = new Date(b.created_at).getTime();
         return sortOrder === 'desc' ? timeB - timeA : timeA - timeB;
       } else if (sortBy === 'price') {
-        const priceA = typeof a.unitPrice === 'number' ? a.unitPrice : 0;
-        const priceB = typeof b.unitPrice === 'number' ? b.unitPrice : 0;
+        const priceA = typeof a.unit_price === 'number' ? a.unit_price : 0;
+        const priceB = typeof b.unit_price === 'number' ? b.unit_price : 0;
         return sortOrder === 'desc' ? priceB - priceA : priceA - priceB;
       }
       return 0;
@@ -157,34 +76,22 @@ export default function CommenterHallContentPage() {
     return sorted;
   };
   
-  // 移除静态数据，使用动态API获取数据
-
   // 从API获取待领取订单
   const fetchAvailableTasks = async (page: number = 0) => {
     setIsLoading(true);
     setError(null);
     
     try {
-      // 构建请求参数
-      const requestParams: ApiRequestParams = {
-        page: page,
-        size: 10,
-        sortField: sortBy === 'time' ? 'createTime' : 'unitPrice', // 默认使用createTime作为排序字段
-        sortOrder: sortOrder.toUpperCase(),
-        platform: 'DOUYIN',
-        taskType: 'COMMENT',
-        minPrice: 1,
-        maxPrice: 999,
-        keyword: ''
-      };
+      // 构建请求URL，使用GET方法，将参数作为查询字符串传递
+      const url = new URL('/api/task/getTaskPoolList', window.location.origin);
+      url.searchParams.append('page', page.toString());
+      url.searchParams.append('size', '10');
+      url.searchParams.append('sortField', sortBy === 'time' ? 'createTime' : 'unitPrice');
+      url.searchParams.append('sortOrder', sortOrder.toUpperCase());
 
       // 调用后端API
-      const response = await fetch('/api/task/missionhall', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestParams),
+      const response = await fetch(url.toString(), {
+        method: 'GET',
         credentials: 'include'
       });
 
@@ -194,14 +101,14 @@ export default function CommenterHallContentPage() {
       }
 
       // 解析响应数据
-      const responseData: ApiResponse = await response.json();
+      const responseData: TaskPoolListResponse = await response.json();
       // 检查API调用是否成功
       if (responseData.success) {
         // 处理返回的任务数据
         const formattedTasks = responseData.data.list || [];
         setTasks(formattedTasks);
-        setTotalItems(responseData.data.total || 0);
-        setTotalPages(responseData.data.pages || 0);
+        setTotalItems(responseData.data.pagination.total || 0);
+        setTotalPages(responseData.data.pagination.total_pages || 0);
         setCurrentPage(page);
         setLastUpdated(new Date());
       } else {
@@ -274,7 +181,7 @@ export default function CommenterHallContentPage() {
   };
   
   // 抢单功能
-  const handleGrabTask = async (taskId: string) => {
+  const handleGrabTask = async (taskId: number) => {
     console.log('=== 抢单功能开始 ===', { taskId });
     
     // 检查是否处于冷却状态
@@ -295,62 +202,67 @@ export default function CommenterHallContentPage() {
 
       // 调用后端抢单API
       console.log('发送抢单请求到后端API');
-      const response = await fetch('/api/task/accepttask', {
+      const response = await fetch('/api/task/getTaskAccept', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ taskId }),
+        body: JSON.stringify({ b_task_id: taskId }),
         credentials: 'include'
       });
-
-      // 检查响应状态
-      if (!response.ok) {
-        console.error('抢单API返回非成功状态:', response.status);
-        // 尝试解析错误响应
-        try {
-          const errorData = await response.json();
-          throw new Error(errorData.message || `抢单失败，状态码: ${response.status}`);
-        } catch (parseError) {
-          throw new Error(`抢单失败，状态码: ${response.status}`);
-        }
-      }
 
       // 解析响应数据
       const responseData = await response.json();
       console.log('抢单API响应数据:', responseData);
       
       // 检查API调用是否成功
-      if (!responseData.success) {
+      if (responseData.code === 0) {
+        // 抢单成功
+        console.log('抢单成功');
+        
+        // 显示成功消息
+        showAlert('抢单成功', responseData.message || '接单成功', 'success');
+        
+        // 开始冷却计时
+        console.log('调用冷却计时器开始5分钟冷却');
+        coolingTimerRef.current?.startCooling(3);
+        
+        // 抢单成功后延迟1秒跳转到任务页面
+        setTimeout(() => {
+          console.log('跳转到任务页面');
+          router.push('/commenter/tasks?tab=ACCEPTED');
+        }, 1000);
+        
+        // 抢单成功后立即刷新列表
+        await fetchAvailableTasks(0);
+      } else {
+        // 抢单失败
         console.error('抢单API返回失败标志:', responseData.message);
-        throw new Error(responseData.message || '抢单失败');
+        // 显示API返回的错误消息，不包含状态码等后端信息
+        showAlert('抢单失败', responseData.message || '抢单失败', 'error');
       }
-      
-      console.log('抢单成功');
-      
-      // 显示成功消息
-      showAlert('抢单成功', '您已成功抢到该任务。单个抖音账号每天评论任务次数8次以内。超过8次可能会影响抖音账号权重导致无法正常显示评论影响个人账号的完成率。可通过升级账号开通快速评论结算通道', 'success');
-      
-      // 开始冷却计时
-      console.log('调用冷却计时器开始5分钟冷却');
-      coolingTimerRef.current?.startCooling(3);
-      
-      // 抢单成功后延迟3秒跳转到任务页面
-      setTimeout(() => {
-        console.log('跳转到任务页面');
-        router.push('/commenter/tasks?tab=ACCEPTED');
-      }, 2000);
-      
-      // 抢单成功后立即刷新列表
-      await fetchAvailableTasks(0);
       
     } catch (error) {
       console.error('抢单错误:', error);
-      const errorMessage = error instanceof Error ? error.message : '抢单时发生错误';
+      // 捕获网络错误等其他错误
+      let errorMessage = '抢单时发生错误，请稍后重试';
+      
+      // 尝试提取API返回的错误信息
+      if (error instanceof Error) {
+        // 如果是Fetch错误，尝试解析错误信息
+        if (error.message.includes('Failed to fetch') || error.message.includes('Network Error')) {
+          errorMessage = '网络连接失败，请检查网络设置';
+        } else {
+          // 其他错误，使用通用错误信息
+          errorMessage = '抢单失败，请稍后重试';
+        }
+      }
+      
+      // 显示友好的错误消息，不包含后端信息
       showAlert('错误', errorMessage, 'error');
     } finally {
       setGrabbingTasks(prev => {
-        const newSet = new Set<string>(prev);
+        const newSet = new Set<number>(prev);
         newSet.delete(taskId);
         return newSet;
       });
@@ -371,14 +283,11 @@ export default function CommenterHallContentPage() {
       <CoolingTimer 
         ref={coolingTimerRef}
         onCoolingStart={handleCoolingStart}
-        onCoolingEnd={handleCoolingEnd}
-      />
-
+        onCoolingEnd={handleCoolingEnd}/>
       {/* 排序功能按钮 */}
-      <div className="bg-white mx-4 mt-4 rounded-lg shadow-sm p-4">
+      <div className="bg-white mx-4 rounded-lg shadow-sm p-4">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-bold text-gray-800">任务排序</h3>
-          {/* 删除自动接单按钮 */}
         </div>
         
         <div className="flex space-x-2">
@@ -427,7 +336,7 @@ export default function CommenterHallContentPage() {
       </div>
 
       {/* 任务列表 */}
-      <div className="mx-4 mt-6">
+      <div className="mx-4 mt-3">
         <div className="flex items-center justify-between mb-4">
           <span className="font-bold text-gray-800">全部任务 ({error ? '加载失败' : isLoading ? '加载中...' : totalItems})</span>
           <div className="text-xs text-gray-500">
@@ -479,73 +388,40 @@ export default function CommenterHallContentPage() {
             </button>
           </div>
         ) : (
-          !isLoading && !error && sortedTasks.map((task) => (
-            <div key={task.id} className="bg-white rounded-lg p-4 mb-4 shadow-sm">
-              <div className="flex justify-between items-start mb-3">
-                <div>
-                  <h3 className="font-bold text-gray-800">{task.title}</h3>
-                  <div className="flex gap-2 mt-1">
-                    <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded inline-block">
-                      {task.taskType}
-                    </span>
-                    {task.isRecommended && (
-                      <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded inline-block">
-                        推荐
-                      </span>
-                    )}
-                    {task.isNew && (
-                      <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded inline-block">
-                        最新
-                      </span>
-                    )}
+          <div>
+            {!isLoading && !error && sortedTasks.map((task) => (
+              <div key={task.id} className="bg-white rounded-lg p-4 mb-4 shadow-sm">
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <h3 className="font-bold text-gray-800">任务标题：{task.title}</h3>
+                    <div className="flex gap-2 mt-1">
+                      {task.status === 1 && (
+                        <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded inline-block">
+                          有效
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-                {task.remainingHours !== null && task.remainingHours > 0 && (
-                  <span className="text-xs bg-yellow-100 text-yellow-600 px-2 py-0.5 rounded">
-                    剩余{task.remainingHours}小时
+                  <span className="text-xs  text-gray-600 px-2 py-1">
+                    到期时间：{task.deadline_text}
                   </span>
-                )}
-              </div>
-              
-              <div className="flex justify-between items-center mb-3">
-                <div className="text-lg font-bold text-orange-500">¥{typeof task.unitPrice === 'number' ? task.unitPrice.toFixed(2) : '0.00'}</div>
-                <div className="text-xs text-gray-500">
-                  <ClockCircleOutlined className="inline-block mr-1" /> {new Date(task.publishedTime).toLocaleString()}
                 </div>
-              </div>
-              
-              {/* 任务进度显示 */}
-              <div className="flex justify-between items-center mb-2">
-                <div className="text-xs text-gray-500">
-                  进度：{task.completedQuantity}/{task.totalQuantity}
+                
+                <div className="flex justify-between items-center mb-3">
+                  <div className="text-2xl font-bold text-orange-500">¥{task.commission||'0.00'}</div>
                 </div>
-                <div className="text-xs text-gray-500">
-                  剩余：{task.availableCount}
-                </div>
+                <button 
+                  className={`w-full py-3 rounded-lg font-medium transition-colors ${grabbingTasks.has(task.id) ? 'bg-gray-400 text-gray-200 cursor-not-allowed' : 'bg-blue-500 text-white hover:bg-blue-600'}`}
+                  onClick={() => handleGrabTask(task.id)}
+                  disabled={grabbingTasks.has(task.id)}
+                >
+                  {grabbingTasks.has(task.id) ? '抢单中...' : '抢单'}
+                </button>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-1.5 mb-4">
-                <div 
-                  className="bg-blue-500 h-1.5 rounded-full transition-all duration-300" 
-                  style={{ width: `${(task.completedQuantity / task.totalQuantity) * 100}%` }}
-                ></div>
-              </div>
-              
-              <div className="text-sm text-gray-600 mb-4">
-                要求：{task.requirements || task.description || '暂无要求'}
-              </div>
-            
-          
-              <button 
-                className={`w-full py-3 rounded-lg font-medium transition-colors ${grabbingTasks.has(task.id) ? 'bg-gray-400 text-gray-200 cursor-not-allowed' : 'bg-blue-500 text-white hover:bg-blue-600'}`}
-                onClick={() => handleGrabTask(task.id)}
-                disabled={grabbingTasks.has(task.id)}
-              >
-                {grabbingTasks.has(task.id) ? '抢单中...' : '抢单'}
-              </button>
-            </div>
-          )))}
-    
-      
+            ))}
+          </div>
+        )}
+      </div>
       {/* 任务提示 */}
       <div className="mx-4 mt-6 bg-blue-50 rounded-lg p-4">
         <div className="flex items-start space-x-3">
@@ -622,6 +498,5 @@ export default function CommenterHallContentPage() {
         onClose={() => setShowAlertModal(false)}
       />
     </div>
-  </div>
   );
 }

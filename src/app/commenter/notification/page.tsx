@@ -107,7 +107,7 @@ export default function NotificationPage() {
     }
     
     // 跳转到订单审核页面 - 使用字符串路径并添加类型断言以解决构建错误
-    router.push(`/publisher/orders/review?id=${notification.orderId}` as any);
+    router.push(`/commenter/orders/review?id=${notification.orderId}` as any);
     
     // 阻止事件冒泡
     if (event) {

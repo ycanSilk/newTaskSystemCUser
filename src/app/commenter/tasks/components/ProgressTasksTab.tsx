@@ -61,8 +61,8 @@ export interface Task {
   settlementRemark: string | null;
   workerRating: number | null;
   workerComment: string | null;
-  publisherRating: number | null;
-  publisherComment: string | null;
+  commenterRating: number | null;
+  commenterComment: string | null;
   firstGroupComment: string | null;
   secondGroupComment: string | null;
   firstGroupImages: string | null;

@@ -15,8 +15,6 @@ export const BackButton: React.FC<BackButtonProps> = ({ className = '', customBa
 
   // 定义各模块的首页路由
   const moduleHomepages: Record<string, string> = {
-    '/publisher': '/publisher/dashboard',
-    '/admin': '/admin/dashboard',
     '/commenter': '/commenter/hall',
     '/accountrental': '/accountrental/account-rental-market'
   };
@@ -24,17 +22,17 @@ export const BackButton: React.FC<BackButtonProps> = ({ className = '', customBa
   // 定义各模块的一级页面列表
   const firstLevelPages = [
     // 派单模块
-    '/publisher/dashboard',
-    '/publisher/create',
-    '/publisher/stats',
-    '/publisher/finance',
-    '/publisher/profile',
-    '/publisher/orders',
-    '/publisher/transactions',
-    '/publisher/tasks',
-    '/publisher/balance',
-    '/publisher/bank-cards',
-    '/publisher/bind-bank-card',
+    '/commenter/dashboard',
+    '/commenter/create',
+    '/commenter/stats',
+    '/commenter/finance',
+    '/commenter/profile',
+    '/commenter/orders',
+    '/commenter/transactions',
+    '/commenter/tasks',
+    '/commenter/balance',
+    '/commenter/bank-cards',
+    '/commenter/bind-bank-card',
     
     // 管理员模块
     '/admin/dashboard',

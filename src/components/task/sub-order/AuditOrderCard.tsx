@@ -171,7 +171,7 @@ const AuditOrderCard: React.FC<AuditOrderCardProps> = ({
       <div className="mb-2 bg-blue-50 border border-blue-500 py-2 px-3 rounded-lg">
         <p className='mb-2  text-sm text-blue-600'>已完成评论点击进入：</p>
         <a 
-          href="http://localhost:3000/publisher/dashboard?tab=active" 
+          href="http://localhost:3000/commenter/dashboard?tab=active" 
           target="_blank" 
           rel="noopener noreferrer" 
           className="bg-blue-600 text-white px-3 py-1.5 rounded-md text-sm font-medium inline-flex items-center"

@@ -106,9 +106,9 @@ const ClientHeader: React.FC<ClientHeaderProps> = ({ user }) => {
     const decryptedPath = getDecryptedPath(pathname);
     const decryptedParts = decryptedPath.split('/').filter(Boolean);
 
-    // 只有当URL精确匹配这4个路径时，才返回publisher/dashboard
+    // 只有当URL精确匹配这4个路径时，才返回commenter/dashboard
     if (firstLevelPages.includes(decryptedPath)) {
-      router.push(getEncryptedPath('/publisher/dashboard?tab=overview'));
+      router.push(getEncryptedPath('/commenter/dashboard?tab=overview'));
       return;
     }
 
@@ -136,7 +136,7 @@ const ClientHeader: React.FC<ClientHeaderProps> = ({ user }) => {
       const parentPath = '/' + decryptedParts.slice(0, -1).join('/');
       router.push(getEncryptedPath(parentPath));
     } else {
-      router.push(getEncryptedPath('/publisher/dashboard?tab=overview'));
+      router.push(getEncryptedPath('/commenter/dashboard?tab=overview'));
     }
   };
 
@@ -293,7 +293,7 @@ const ClientHeader: React.FC<ClientHeaderProps> = ({ user }) => {
             aria-label="用户菜单"
           >
             <img 
-              src="/images/0e92a4599d02a7.jpg" 
+              src="/images/default.png" 
               alt="用户头像" 
               className="w-full h-full rounded-full object-cover"
             />

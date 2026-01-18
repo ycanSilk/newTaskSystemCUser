@@ -239,7 +239,7 @@ export default function TopNavigationBar({ user }: TopNavigationBarProps) {
             aria-label="用户菜单"
           >
             <img 
-              src={user?.avatar || '/images/0e92a4599d02a7.jpg'} 
+              src={user?.avatar || '/images/default.png'} 
               alt="用户头像" 
               className="w-full h-full rounded-full object-cover"
             />

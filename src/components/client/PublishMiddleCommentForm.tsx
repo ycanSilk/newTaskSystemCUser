@@ -325,7 +325,7 @@ const PublishMiddleCommentForm = () => {
     setTimeout(() => {
       setIsPublishing(false);
       showAlert('任务发布成功', '您的任务已成功发布！', '✅', '查看任务', () => {
-        router.push('/publisher/tasks');
+        router.push('/commenter/tasks');
       });
     }, 1500);
   };

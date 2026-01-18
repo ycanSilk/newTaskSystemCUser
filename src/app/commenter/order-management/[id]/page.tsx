@@ -54,8 +54,8 @@ export interface TaskDetail {
   settlementRemark: string;
   workerRating: number;
   workerComment: string;
-  publisherRating: number;
-  publisherComment: string;
+  commenterRating: number;
+  commenterComment: string;
   firstGroupComment: string;
   secondGroupComment: string;
   firstGroupImages: string;

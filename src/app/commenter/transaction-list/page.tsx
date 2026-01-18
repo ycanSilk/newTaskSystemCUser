@@ -306,17 +306,17 @@ const TransactionListPage = () => {
 
   // 处理查看交易详情
   const handleViewTransaction = (transactionId: string) => {
-    router.push(`/publisher/balance/transaction-details/${transactionId}`);
+    router.push(`/commenter/balance/transaction-details/${transactionId}`);
   };
 
   // 处理查看充值详情
   const handleViewRecharge = (rechargeId: string) => {
-    router.push(`/publisher/balance/transaction-details/${rechargeId}`);
+    router.push(`/commenter/balance/transaction-details/${rechargeId}`);
   };
 
   // 处理查看提现详情
   const handleViewWithdrawal = (withdrawalId: string) => {
-    router.push(`/publisher/balance/transaction-details/${withdrawalId}`);
+    router.push(`/commenter/balance/transaction-details/${withdrawalId}`);
   };
 
   // 返回上一页

@@ -84,14 +84,14 @@ const CompletedOrderCard: React.FC<CompletedOrderCardProps> = ({
     if (onViewDetails) {
       onViewDetails(order.id);
     } else {
-      router.push(`/publisher/orders/task-detail/${order.id}`);
+      router.push(`/commenter/orders/task-detail/${order.id}`);
     }
   };
 
   // 处理补单 - 跳转到补单页面并传递订单信息
   const handleReorder = () => {
     // 跳转到专门的补单页面，并传递订单信息
-    router.push(`/publisher/create/supplementaryorder?reorder=true&orderId=${order.id}&title=${encodeURIComponent(order.title)}&description=${encodeURIComponent(order.description)}&type=${order.type}&budget=${order.budget.toString()}&subOrderCount=${order.subOrders.length}`);
+    router.push(`/commenter/create/supplementaryorder?reorder=true&orderId=${order.id}&title=${encodeURIComponent(order.title)}&description=${encodeURIComponent(order.description)}&type=${order.type}&budget=${order.budget.toString()}&subOrderCount=${order.subOrders.length}`);
   };
 
   return (
@@ -128,7 +128,7 @@ const CompletedOrderCard: React.FC<CompletedOrderCardProps> = ({
       <div className="mb-2 bg-blue-50 border border-blue-500 py-2 px-3 rounded-lg">
         <p className='mb-2  text-sm text-blue-600'>任务视频点击进入：</p>
         <a 
-          href="http://localhost:3000/publisher/dashboard?tab=active" 
+          href="http://localhost:3000/commenter/dashboard?tab=active" 
           target="_blank" 
           rel="noopener noreferrer" 
           className="bg-blue-600 text-white px-3 py-1.5 rounded-md text-sm font-medium inline-flex items-center"
@@ -145,7 +145,7 @@ const CompletedOrderCard: React.FC<CompletedOrderCardProps> = ({
       <div className="mb-2 bg-blue-50 border border-blue-500 py-2 px-3 rounded-lg">
         <p className='mb-2  text-sm text-blue-600'>已完成评论点击进入：</p>
         <a 
-          href="http://localhost:3000/publisher/dashboard?tab=active" 
+          href="http://localhost:3000/commenter/dashboard?tab=active" 
           target="_blank" 
           rel="noopener noreferrer" 
           className="bg-blue-600 text-white px-3 py-1.5 rounded-md text-sm font-medium inline-flex items-center"

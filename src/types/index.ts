@@ -6,7 +6,7 @@ export * from './settings';
 export * from './rentalOrder';
 
 // 用户角色
-export type UserRole = 'admin' | 'publisher' | 'commenter';
+export type UserRole = 'admin' | 'commenter' | 'commenter';
 
 // 任务需求类型已经在后面重新定义，保留更具体的版本
 
@@ -53,7 +53,7 @@ export interface Task {
   category: string;
   difficulty: 1 | 2 | 3;
   status: 'active' | 'completed'; // 根据规范，主任务只有进行中和已完成两种状态
-  publisherId: string;
+  commenterId: string;
   deadline: string;
   isHot?: boolean;
   countdown?: number;

@@ -74,7 +74,7 @@ export interface Transaction {
 // 用户账户余额接口
 export interface AccountBalance {
   userId: string;             // 用户ID
-  userType: 'publisher' | 'commenter' | 'admin';  // 用户类型
+  userType: 'commenter' | 'commenter' | 'admin';  // 用户类型
   currentBalance: number;     // 当前余额
   availableBalance: number;   // 可用余额
   frozenAmount: number;       // 冻结金额

@@ -44,7 +44,7 @@ module.exports = {
         // 角色标识色
         role: {
           admin: '#8B5CF6',      // 管理员-紫色
-          publisher: '#4A90E2',   // 派单员-主蓝
+          commenter: '#4A90E2',   // 派单员-主蓝
           commenter: '#10B981',   // 评论员-绿色
         },
         // 功能色系

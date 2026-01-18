@@ -15,7 +15,7 @@ export const APP_CONFIG = {
 // 用户角色常量
 export const USER_ROLES = {
   ADMIN: 'admin',
-  PUBLISHER: 'publisher', 
+  commenter: 'commenter', 
   COMMENTER: 'commenter',
 } as const;
 

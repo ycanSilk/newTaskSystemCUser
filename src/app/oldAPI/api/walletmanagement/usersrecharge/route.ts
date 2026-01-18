@@ -27,7 +27,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     let token = '';
     try {
       const cookieStore = await cookies();
-      const cookieToken = cookieStore.get('publisher_token');
+      const cookieToken = cookieStore.get('commenter_token');
       token = cookieToken?.value || '';
     } catch (cookieError) {
       console.error('无法从Cookie获取token:', cookieError);

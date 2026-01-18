@@ -1,278 +1,268 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { User } from '@/types';
+// 导入React钩子：useState用于状态管理，useEffect用于处理副作用
+import { useState, useEffect, useRef } from 'react';
+// 导入User和UserRole类型定义
+import { User, UserRole } from '@/types';
+// 导入CheckTokenResponse类型
+import { CheckTokenResponse } from '@/app/types/auth/checkTokenTypes';
+// 导入userStore
+import { useUserStore } from '@/store/userStore';
+// 导入路由解密工具函数
+import { decryptRoute, isEncryptedRoute } from '@/lib/routeEncryption';
 
-// 从localStorage获取当前登录用户信息
-const getCurrentLoggedInUser = (): User | null => {
-  try {
-    if (typeof window === 'undefined') return null;
+// 从API获取用户信息的函数
+const fetchUserInfoFromApi = async (): Promise<User | null> => {
+  // 每次调用都重新检查当前页面是否为登录或注册页面，如果是则直接返回null，不进行任何API调用
+  if (typeof window !== 'undefined') {
+    let pathname = window.location.pathname;
     
-    // 检查commenter认证数据
-    const commenterAuthData = localStorage.getItem('commenter_auth_data');
-    if (commenterAuthData) {
-      const parsedData = JSON.parse(commenterAuthData);
-      if (parsedData.userInfo) {
-        return {
-          id: parsedData.userId || parsedData.userInfo.id,
-          username: parsedData.username || parsedData.userInfo.username,
-          role: 'commenter',
-          ...parsedData.userInfo,
-          // 确保必要的字段存在
-          balance: parsedData.userInfo.balance || 0,
-          status: parsedData.userInfo.status || 'active',
-          createdAt: parsedData.userInfo.createTime || parsedData.createdAt || new Date().toISOString()
-        };
+    // 解密路径，以便正确判断页面类型
+    const pathParts = pathname.split('/').filter(Boolean);
+    if (pathParts.length > 0 && isEncryptedRoute(pathParts[0])) {
+      try {
+        const decryptedPath = decryptRoute(pathParts[0]);
+        const decryptedParts = decryptedPath.split('/').filter(Boolean);
+        const remainingPath = pathParts.slice(1).join('/');
+        pathname = `/${decryptedParts.join('/')}${remainingPath ? `/${remainingPath}` : ''}`;
+      } catch (error) {
+        console.error('解密路径失败:', error);
       }
     }
     
-    // 检查publisher认证数据
-    const publisherToken = localStorage.getItem('publisher_auth_token');
-    const publisherUser = localStorage.getItem('publisher_user_info');
-    if (publisherToken && publisherUser) {
-      const userInfo = JSON.parse(publisherUser);
-      return {
-        id: userInfo.id || '',
-        username: userInfo.username || '',
-        role: 'publisher',
-        ...userInfo,
-        balance: userInfo.balance || 0,
-        status: userInfo.status || 'active',
-        createdAt: userInfo.createTime || new Date().toISOString()
-      };
+    if (pathname.includes('/commenter/auth/login') || pathname.includes('/commenter/auth/register')) {
+      return null;
+    }
+  }
+  
+  try {
+    // 调用验证Token有效性的API端点
+    const response = await fetch('/api/auth/checkToken', {
+      method: 'GET',
+      credentials: 'include', // 包含cookie
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store',
+    });
+    
+    // 如果响应状态为401，直接返回null，不解析响应体
+    if (response.status === 401) {
+      return null;
     }
     
+    // 解析API响应
+    const data = await response.json();
+    
+    // 如果API返回成功，且token有效，返回用户信息
+    if (data.code === 0 && data.data.valid === true) {
+      // 从响应中提取用户信息
+      const userInfo: User = {
+        // 从响应中实际存在的字段映射
+        id: data.data.user_id.toString(),
+        username: data.data.username,
+        email: data.data.email,
+        
+        // User类型必需的字段，使用默认值
+        role: 'commenter' as UserRole, // 默认角色
+        balance: 0, // 默认余额
+        status: 'active', // 默认状态
+        createdAt: new Date().toISOString() // 默认创建时间
+      };
+      return userInfo;
+    }
+    
+    // 如果API返回失败，或token无效，返回null
     return null;
   } catch (error) {
-    console.error('获取当前登录用户信息失败:', error);
+    console.error('Token校验失败:', error);
+    return null;
+  }
+};
+
+// 获取当前登录用户
+const getCurrentLoggedInUser = async (): Promise<User | null> => {
+  try {
+    // 如果在服务器端渲染，返回null
+    if (typeof window === 'undefined') {
+      return null;
+    }
+    
+    // 从API获取用户信息
+    const user = await fetchUserInfoFromApi();
+    return user;
+  } catch (error) {
+    console.error('Failed to get current logged in user:', error);
     return null;
   }
 };
 
 // 检查是否有任何用户登录
-const isAnyUserLoggedIn = (): boolean => {
+const isAnyUserLoggedIn = async (): Promise<boolean> => {
   try {
-    if (typeof window === 'undefined') return false;
+    // 如果在服务器端渲染，返回false
+    if (typeof window === 'undefined') {
+      return false;
+    }
     
-    // 检查commenter认证数据
-    const commenterAuthData = localStorage.getItem('commenter_auth_data');
-    if (commenterAuthData) return true;
-    
-    // 检查publisher认证数据
-    const publisherToken = localStorage.getItem('publisher_auth_token');
-    if (publisherToken) return true;
-    
-    // 检查会话标记
-    const activeSession = sessionStorage.getItem('commenter_active_session');
-    if (activeSession) return true;
-    
-    return false;
+    // 从API获取用户信息
+    const user = await fetchUserInfoFromApi();
+    return !!user;
   } catch (error) {
-    console.error('检查登录状态失败:', error);
+    console.error('Failed to check if any user is logged in:', error);
     return false;
   }
 };
 
-// 保存用户信息到localStorage
-export const saveUserInfo = (user: User): void => {
-  try {
-    if (typeof window === 'undefined') return;
-
-    if (user.role === 'commenter') {
-      // 保存commenter用户信息
-      localStorage.setItem('commenter_auth_data', JSON.stringify({
-        userId: user.id,
-        username: user.username,
-        userInfo: user
-      }));
-    } else if (user.role === 'publisher') {
-      // 保存publisher用户信息
-      localStorage.setItem('publisher_user_info', JSON.stringify(user));
-    }
-  } catch (error) {
-    console.error('保存用户信息失败:', error);
-  }
-};
-
-// 通用登录函数
-const commonLogin = async (credentials: any) => {
-  try {
-    // 这是一个简化的登录实现，实际项目中应该调用后端API
-    const { username, password, role } = credentials;
-    
-    // 根据不同角色返回模拟数据
-    if (role === 'commenter') {
-      return {
-        success: true,
-        message: '登录成功',
-        user: {
-          id: `commenter-${Date.now()}`,
-          username,
-          role: 'commenter' as const, // 断言为UserRole类型的字面量
-          balance: 0,
-          status: 'active' as const, // 断言为User中定义的status类型
-          createdAt: new Date().toISOString()
-        }
-      };
-    } else if (role === 'publisher') {
-      return {
-        success: true,
-        message: '登录成功',
-        user: {
-          id: `publisher-${Date.now()}`,
-          username,
-          role: 'publisher' as const, // 断言为UserRole类型的字面量
-          balance: 1000,
-          status: 'active' as const, // 断言为User中定义的status类型
-          createdAt: new Date().toISOString()
-        }
-      };
-    } else {
-      return {
-        success: false,
-        message: '不支持的角色类型'
-      };
-    }
-  } catch (error) {
-    console.error('登录失败:', error);
-    return {
-      success: false,
-      message: error instanceof Error ? error.message : '登录过程中发生错误'
-    };
-  }
-};
-
-// 通用登出函数
-const commonLogout = async () => {
-  try {
-    if (typeof window === 'undefined') return;
-    
-    // 清除所有认证相关数据
-    localStorage.removeItem('commenter_auth_data');
-    localStorage.removeItem('publisher_auth_token');
-    localStorage.removeItem('publisher_user_info');
-    sessionStorage.removeItem('commenter_active_session');
-    
-    console.log('已清除所有认证信息');
-  } catch (error) {
-    console.error('登出失败:', error);
-  }
-};
-
+// 定义useUser钩子返回值的类型
 interface UseUserReturn {
-  user: User | null;
-  isLoading: boolean;
-  isLoggedIn: boolean;
-  login: (credentials: any) => Promise<{ success: boolean; message: string }>;
-  logout: () => void;
-  refreshUser: () => void;
-  updateUser: (updatedUser: User) => void;
-  isAuthenticated: boolean;
+  user: User | null; // 用户信息，未登录时为null
+  isLoading: boolean; // 是否正在加载用户信息
+  isLoggedIn: boolean; // 用户是否已登录
+  refreshUser: () => void; // 刷新用户信息函数
+  isAuthenticated: boolean; // 用户是否已认证（等同于isLoggedIn && !!user）
 }
 
+// 导出useUser钩子，用于管理用户登录状态
 export function useUser(): UseUserReturn {
-  const [user, setUser] = useState<User | null>(null);
+  // 从userStore获取状态和方法
+  const { currentUser, setUser, clearUser, fetchUser } = useUserStore();
+  // 定义加载状态
   const [isLoading, setIsLoading] = useState(true);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  // 定义登录状态
+  const [isLoggedIn, setIsLoggedIn] = useState(!!currentUser);
+  // 请求防抖定时器引用
+  const requestDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  // 上次请求时间引用
+  const lastRequestTimeRef = useRef<number>(0);
 
-  // 初始化时检查用户登录状态
-  useEffect(() => {
-    setIsLoading(true);
-
-    // 获取当前登录用户
-    const currentUser = getCurrentLoggedInUser();
-    const loggedIn = isAnyUserLoggedIn();
+  // 检查当前页面是否为登录或注册页面的辅助函数
+  const checkIfLoginPage = () => {
+    if (typeof window === 'undefined') return false;
     
-    setUser(currentUser);
-    setIsLoggedIn(loggedIn);
-    setIsLoading(false);
-  }, []);
-
-  // 登录函数
-  const handleLogin = async (credentials: any) => {
-    setIsLoading(true);
+    let pathname = window.location.pathname;
     
-    try {
-      const result = await commonLogin(credentials);
-      
-      if (result.success && result.user) {
-        // 更新状态
-        setUser(result.user);
-        setIsLoggedIn(true);
-        
-        return {
-          success: true,
-          message: result.message
-        };
-      } else {
-        return {
-          success: false,
-          message: result.message || '登录失败'
-        };
+    // 解密路径，以便正确判断页面类型
+    const pathParts = pathname.split('/').filter(Boolean);
+    if (pathParts.length > 0 && isEncryptedRoute(pathParts[0])) {
+      try {
+        const decryptedPath = decryptRoute(pathParts[0]);
+        const decryptedParts = decryptedPath.split('/').filter(Boolean);
+        const remainingPath = pathParts.slice(1).join('/');
+        pathname = `/${decryptedParts.join('/')}${remainingPath ? `/${remainingPath}` : ''}`;
+      } catch (error) {
+        console.error('解密路径失败:', error);
       }
+    }
+    
+    return pathname.includes('/commenter/auth/login') || pathname.includes('/commenter/auth/register');
+  };
+
+  // 检查用户登录状态的函数
+  const checkLoginStatus = async () => {
+    // 如果是登录页面，直接返回，不进行任何API调用
+    if (checkIfLoginPage()) {
+      setIsLoading(false);
+      return;
+    }
+
+    // 防抖：如果在短时间内已经请求过，跳过
+    const now = Date.now();
+    if (now - lastRequestTimeRef.current < 1000) {
+      return;
+    }
+    
+    // 设置加载状态为true
+    setIsLoading(true);
+    lastRequestTimeRef.current = now;
+
+    try {
+      // 获取当前登录用户
+      const user = await getCurrentLoggedInUser();
+      
+      // 根据user判断用户是否已登录
+      const loggedIn = !!user;
+      // 更新userStore中的用户信息
+      if (user) {
+        setUser(user);
+      } else {
+        clearUser();
+      }
+      
+      // 更新本地状态
+      setIsLoggedIn(loggedIn);
     } catch (error) {
-      return {
-        success: false,
-        message: '登录过程中发生错误，请重试'
-      };
+      console.error('useUser checkLoginStatus: 检查登录状态出错 -', error);
+      // 发生错误时，将用户信息和登录状态重置为默认值
+      clearUser();
+      setIsLoggedIn(false);
     } finally {
+      // 设置加载状态为false
       setIsLoading(false);
     }
   };
 
-  // 登出函数
-  const handleLogout = async () => {
-    setIsLoading(true);
-    setIsLoggedIn(false);
-    setUser(null);
-    await commonLogout();
-    setIsLoading(false);
-  };
-
-  // 刷新用户信息
-  const refreshUser = () => {
-    const currentUser = getCurrentLoggedInUser();
-    if (currentUser) {
-      setUser(currentUser);
-      setIsLoggedIn(true);
-    } else {
-      setUser(null);
-      setIsLoggedIn(false);
+  // 初始化时检查用户登录状态
+  useEffect(() => {
+    // 如果是登录页面，直接设置为未加载状态，不调用API
+    if (checkIfLoginPage()) {
+      setIsLoading(false);
+      return;
     }
-  };
 
-  // 更新用户信息
-  const updateUser = (updatedUser: User) => {
-    setUser(updatedUser);
+    // 异步函数包装器，用于在useEffect中调用异步函数
+    const initialize = async () => {
+      // 调用API检查登录状态
+      await checkLoginStatus();
+    };
     
-    // 更新存储的用户信息
-    if (typeof window !== 'undefined' && updatedUser.role) {
-      if (updatedUser.role === 'commenter') {
-        try {
-          // 更新评论者用户信息
-          localStorage.setItem('AcceptTask_token', JSON.stringify(updatedUser));
-        } catch (error) {
-          console.error('更新评论者用户信息失败:', error);
+    // 调用初始化函数
+    initialize();
+    
+    // 创建事件处理函数，添加防抖
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // 防抖：300ms内只执行一次
+        if (requestDebounceRef.current) {
+          clearTimeout(requestDebounceRef.current);
         }
-      } else if (updatedUser.role === 'publisher') {
-        try {
-          // 更新发布者用户信息
-          localStorage.setItem('publisher_user_info', JSON.stringify(updatedUser));
-        } catch (error) {
-          console.error('更新发布者用户信息失败:', error);
-        }
+        requestDebounceRef.current = setTimeout(() => {
+          // 每次调用前都检查当前页面是否为登录页面
+          if (!checkIfLoginPage()) {
+            checkLoginStatus();
+          }
+        }, 300);
       }
+    };
+    
+    // 监听visibilitychange事件，当页面重新可见时检查登录状态
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      // 清除事件监听器
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      // 清除防抖定时器
+      if (requestDebounceRef.current) {
+        clearTimeout(requestDebounceRef.current);
+      }
+    };
+  }, [setUser, clearUser]);
+
+  // 刷新用户信息函数
+  const refreshUser = async () => {
+    // 如果是登录页面，直接返回，不进行任何API调用
+    if (checkIfLoginPage()) {
+      return;
     }
+    await checkLoginStatus();
   };
 
+  // 返回useUser钩子的结果
   return {
-    user,
+    user: currentUser,
     isLoading,
     isLoggedIn,
-    login: handleLogin,
-    logout: handleLogout,
     refreshUser,
-    updateUser,
-    isAuthenticated: isLoggedIn && !!user
+    isAuthenticated: isLoggedIn && !!currentUser
   };
 }

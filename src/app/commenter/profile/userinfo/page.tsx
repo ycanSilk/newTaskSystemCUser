@@ -20,7 +20,7 @@ export default function PersonalInfoPage() {
   // 用户个人信息状态
   const [userProfile, setUserProfile] = useState<UserProfile>({
     id: '',
-    avatar: '/images/0e92a4599d02a7.jpg',
+    avatar: '/images/default.png',
     name: '',
     phone: '',
     email: null,
@@ -76,7 +76,7 @@ export default function PersonalInfoPage() {
           email: userInfo.email,
           invitationCode: userInfo.invitationCode || '',
           createdAt: userInfo.createTime ? new Date(userInfo.createTime).toLocaleDateString() : '',
-          avatar: userInfo.avatar || '/images/0e92a4599d02a7.jpg'
+          avatar: userInfo.avatar || '/images/default.png'
         });
       } else {
         throw new Error(data.message || '获取用户信息失败');

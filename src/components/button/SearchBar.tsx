@@ -158,7 +158,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
         title: `订单 ${term}`,
         description: `订单详情查看`,
         type: 'order',
-        urlPath: `/publisher/orders?search=${encodeURIComponent(term)}`,
+        urlPath: `/commenter/orders?search=${encodeURIComponent(term)}`,
         timestamp: now - 10000 // 模拟时间戳
       });
     }

@@ -43,7 +43,7 @@ export enum IncomeType {
 export interface RechargeOrder {
   orderId: string;              // 订单ID
   userId: string;               // 用户ID
-  userType: 'publisher' | 'commenter' | 'admin'; // 用户类型
+  userType: 'commenter' | 'commenter' | 'admin'; // 用户类型
   amount: number;               // 充值金额
   currency: string;             // 货币类型
   paymentMethod: PaymentMethod; // 支付方式
@@ -60,7 +60,7 @@ export interface RechargeOrder {
 export interface WithdrawalOrder {
   orderId: string;              // 订单ID
   userId: string;               // 用户ID
-  userType: 'publisher' | 'commenter' | 'admin'; // 用户类型
+  userType: 'commenter' | 'commenter' | 'admin'; // 用户类型
   amount: number;               // 提现金额
   currency: string;             // 货币类型
   withdrawalAccountId: string;  // 提现账户ID
@@ -80,7 +80,7 @@ export interface WithdrawalOrder {
 export interface ExpenseOrder {
   orderId: string;              // 订单ID
   userId: string;               // 用户ID
-  userType: 'publisher' | 'commenter' | 'admin'; // 用户类型
+  userType: 'commenter' | 'commenter' | 'admin'; // 用户类型
   amount: number;               // 消费金额
   currency: string;             // 货币类型
   type: ExpenseType;            // 消费类型
@@ -96,7 +96,7 @@ export interface ExpenseOrder {
 export interface IncomeRecord {
   recordId: string;             // 记录ID
   userId: string;               // 用户ID
-  userType: 'publisher' | 'commenter' | 'admin'; // 用户类型
+  userType: 'commenter' | 'commenter' | 'admin'; // 用户类型
   amount: number;               // 收入金额
   currency: string;             // 货币类型
   type: IncomeType;             // 收入类型
@@ -111,7 +111,7 @@ export interface RefundRecord {
   refundId: string;             // 退款ID
   originalOrderId: string;      // 原始订单ID
   userId: string;               // 用户ID
-  userType: 'publisher' | 'commenter' | 'admin'; // 用户类型
+  userType: 'commenter' | 'commenter' | 'admin'; // 用户类型
   amount: number;               // 退款金额
   currency: string;             // 货币类型
   reason: string;               // 退款原因

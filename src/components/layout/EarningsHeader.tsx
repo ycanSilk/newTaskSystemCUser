@@ -72,7 +72,7 @@ export const EarningsHeader: React.FC<EarningsHeaderProps> = ({
           </div>
         );
 
-      case 'publisher':
+      case 'commenter':
         return (
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -186,7 +186,7 @@ export const EarningsHeader: React.FC<EarningsHeaderProps> = ({
             <div className="text-sm font-medium">{user.nickname || user.username}</div>
             <div className="text-xs text-gray-300">
               {user.role === 'admin' && '系统管理员'}
-              {user.role === 'publisher' && '派单员'}
+              {user.role === 'commenter' && '派单员'}
               {user.role === 'commenter' && '评论员'}
             </div>
           </div>

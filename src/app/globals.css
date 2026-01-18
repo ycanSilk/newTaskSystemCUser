@@ -230,8 +230,8 @@
     --theme-color: theme('colors.role.admin');
   }
   
-  .theme-publisher {
-    --theme-color: theme('colors.role.publisher');
+  .theme-commenter {
+    --theme-color: theme('colors.role.commenter');
   }
   
   .theme-commenter {
