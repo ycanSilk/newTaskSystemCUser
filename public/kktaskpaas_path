@@ -14,7 +14,7 @@ server {
     }
 
     # B端服务配置 - 通过 /b 路径访问
-    location ^~ /bcom/ {  # ^~ 表示匹配前缀后不再检查正则，提高效率
+    location ^~ /bcom/www/ {  # ^~ 表示匹配前缀后不再检查正则，提高效率
         # 重要：将请求代理到B端应用（PM2运行的端口）
         proxy_pass http://127.0.0.1:7770/; # 结尾的 / 非常重要！它会将 /b/ 前缀移除[1](@ref)
         # 设置正确的请求头，确保后端应用能获取到真实客户信息[1,2,5](@ref)
@@ -29,7 +29,7 @@ server {
     }
 
     # C端服务配置 - 通过 /c 路径访问
-    location ^~ /ccom/ {
+    location ^~ /ccom/www/ {
         proxy_pass http://127.0.0.1:8890/; # 同样，结尾的 / 用于移除 /c/ 前缀
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
