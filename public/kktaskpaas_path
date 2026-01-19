@@ -1,0 +1,58 @@
+server {
+    listen 80;
+    # 您的域名，这样当请求到达Nginx时，只会处理该域名的请求[4](@ref)
+    server_name www.kktaskpaas.com kktaskpaas.com; 
+	
+	# 设置网站的根目录，确保forbidden_index.html文件放在这里
+    root /home/taskweb/error/html;
+    
+    # 处理根路径访问
+    location = / {
+        # 直接显示自定义的错误提示页面，而不是返回302重定向
+        # 这样可以避免暴露后端结构，直接展示友好界面
+        try_files /forbidden_index.html =403;
+    }
+
+    # B端服务配置 - 通过 /b 路径访问
+    location ^~ /bcom/ {  # ^~ 表示匹配前缀后不再检查正则，提高效率
+        # 重要：将请求代理到B端应用（PM2运行的端口）
+        proxy_pass http://127.0.0.1:7770/; # 结尾的 / 非常重要！它会将 /b/ 前缀移除[1](@ref)
+        # 设置正确的请求头，确保后端应用能获取到真实客户信息[1,2,5](@ref)
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        # 超时设置
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+
+    # C端服务配置 - 通过 /c 路径访问
+    location ^~ /ccom/ {
+        proxy_pass http://127.0.0.1:8890/; # 同样，结尾的 / 用于移除 /c/ 前缀
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+
+    # 安全设置：禁止直接访问forbidden_index.html文件本身
+    location = /forbidden_index.html {
+        internal; # 仅允许内部重定向访问
+    }
+    
+    # 安全设置：禁止访问隐藏文件
+    location ~ /\. {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+
+    # 独立记录访问日志，便于排查问题
+    access_log /home/taskweb/nginxLog/kktaskpaas.access.log;
+    error_log /home/taskweb/nginxLog/kktaskpaas.error.log;
+}
