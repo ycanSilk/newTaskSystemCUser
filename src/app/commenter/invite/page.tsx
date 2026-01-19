@@ -6,244 +6,56 @@ import { UserOutlined, CodeOutlined, MessageOutlined, MobileOutlined, LaptopOutl
 import { Modal } from 'antd';
 import { User } from '@/types';
 import { generateInviteCode } from '@/lib/utils';
+import { GetAgentInfoResponse } from '@/app/types/agent/getAgentInfoTypes';
 
 // 邀请页面组件
 const InvitePage = () => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'invite' | 'invited' | 'commission'>('invite');
   const [copied, setCopied] = useState<boolean>(false);
-  // 定义与后端API一致的数据接口类型
-  interface ApiResponse<T = any> {
-    code: number;
-    message: string;
-    success: boolean;
-    timestamp: number;
-    data: T;
-  }
-
-  // 邀请码API响应数据类型
-  interface InvitationCodeData {
-    inviteCode: string;
-    userId: string;
-  }
-
-  // 统计数据API响应数据类型
-  interface AgentStatsData {
-    teamMemberCount: number;
-    totalReward: number;
-    pendingReward: number;
-    todayReward: number;
-    monthReward: number;
-    totalInvited: number;
-    activeUsers: number;
-  }
-
-  // 邀请记录数据类型
-  interface InviteRecord {
-    id: string;
-    inviteeName: string;
-    inviteeAvatar: React.ReactNode;
-    inviteDate: string;
-    joinDate: string | null;
-    status: 'active' | 'joined' | 'pending';
-    completedTasks: number;
-    totalEarnings: number;
-    myCommission: number;
-  }
-
-  // 佣金记录数据类型
-  interface CommissionRecord {
-    id: string;
-    date: string;
-    type: 'task' | 'register' | 'team';
-    memberName: string;
-    taskName: string;
-    commission: number;
-    commissionRate: number;
-    taskEarning: number;
-    description: string;
-  }
-
-  // 状态管理
-  const [invitationCodeData, setInvitationCodeData] = useState<InvitationCodeData | null>(null);
-
-  const [generatingInviteCode, setGeneratingInviteCode] = useState<boolean>(false);
-  const [agentStatsData, setAgentStatsData] = useState<AgentStatsData | null>(null);
-  const [inviteRecords, setInviteRecords] = useState<InviteRecord[]>([]);
-  const [commissionRecords, setCommissionRecords] = useState<CommissionRecord[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [userId, setUserId] = useState<string>(''); // 改为公有的状态变量
-  const [showGenerateButton, setShowGenerateButton] = useState<boolean>(true); // 控制生成邀请码按钮的显示
-  const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false); // 控制成功提示框的显示
+  const [agentInfo, setAgentInfo] = useState<any>(null);
 
-  // 定义localStorage中存储的评论者认证数据类型
-  interface CommenterAuthData {
-    userId: string;
-    username: string;
-    userInfo: User;
-    inviteCode?: string; // 邀请码字段
-  }
-const commenterAuthDataStr = localStorage.getItem('commenter_auth_data');
-const commenterAuthData = JSON.parse(commenterAuthDataStr || '{}') as CommenterAuthData;
-const userInfo = commenterAuthData.userInfo;
-const storedInviteCode = userInfo.invitationCode;
-const currentUserId = userInfo.id;
-  // 从localStorage获取用户ID的函数
-  const getUserFromLocalStorage = () => {
-    try {
-      
-      if (commenterAuthDataStr) {
-        // 更新用户ID状态
-        setUserId(currentUserId);
-        
-        // 从localStorage获取邀请码
-        if (storedInviteCode && typeof storedInviteCode === 'string') {
-          // 设置邀请码数据
-          setInvitationCodeData({
-            inviteCode: storedInviteCode,
-            userId: currentUserId 
-          });
-          // 如果有邀请码，则隐藏生成邀请码按钮
-          setShowGenerateButton(false);
-        } else {
-          // 如果没有邀请码，则显示生成邀请码按钮
-          setShowGenerateButton(true);
-        }
-      }
-    } catch (err) {
-      // 获取用户信息失败
-    }
-  };
-
-  // 生成邀请码函数
-  const GenerateInviteCode = async () => {
-    setGeneratingInviteCode(true);
-    try {
-      if (!userId || userId.trim() === '') {
-        // 如果userId为空，尝试从localStorage重新获取
-        getUserFromLocalStorage();
-        if (!userId || userId.trim() === '') {
-          setError('未找到有效的用户ID');
-          setGeneratingInviteCode(false);
-          return;
-        }
-      }
-      // 要传递给/api/inviteagent/myinvitationcode后端的user ID
-
-      // 调用生成邀请码的API
-      const response = await fetch('/api/inviteagent/myinvitationcode', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-User-Id': currentUserId  // 在请求头中传递userId
-        }
-      });
-      
-      if (!response.ok) {
-        setError(`请求失败: ${response.status}`);
-        return;
-      }
-
-      const data: ApiResponse<InvitationCodeData> = await response.json();
-      
-      // 同时检查HTTP状态和响应数据中的success字段
-      if (data.success === true) {
-        // 成功后显示自定义美化提示框
-        setShowSuccessModal(true);
-      } else {
-        // 处理API返回的错误，即使HTTP状态是200
-        const errorMessage = data.message || '生成邀请码失败';
-        setError(errorMessage);
-      }
-    } catch (err) {
-      // 处理网络错误或其他意外异常
-      const errorMessage = err instanceof Error ? `网络或系统错误: ${err.message}` : '生成邀请码时发生未知错误';
-      setError(errorMessage);
-    } finally {
-      setGeneratingInviteCode(false);
-    }
-  };
-
-  // 实现API请求逻辑
+  // 页面加载时获取代理信息
   useEffect(() => {
-    setLoading(true);
-    setError(null);
-    
-    // 首先从localStorage获取用户ID
-    getUserFromLocalStorage();
-    
-    const fetchData = async () => {
+    const fetchAgentInfo = async () => {
+      setLoading(true);
+      setError(null);
+      
       try {
-        const agentStatsResponse = await fetch('/api/inviteagent/agentstats', {
+        // 调用getAgentInfo API
+        const response = await fetch('/api/agent/getAgentInfo', {
           method: 'GET',
           headers: {
-            'Content-Type': 'application/json',
-            'X-User-Id': currentUserId || ''
-          },
-        });
-
-        const agentStatsResponseData: ApiResponse<AgentStatsData> = await agentStatsResponse.json();
-        setAgentStatsData(agentStatsResponseData.data);
-
-        // 初始加载时获取邀请码
-        const generateInviteCodeResponse = await fetch('/api/inviteagent/myinvitationcode', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-User-Id': currentUserId || ''
-          },
+            'Content-Type': 'application/json'
+          }
         });
         
-        const generateInviteCodeResponseData: ApiResponse<InvitationCodeData> = await generateInviteCodeResponse.json();
+        const result: GetAgentInfoResponse = await response.json();
         
-        if (generateInviteCodeResponseData.success === true && generateInviteCodeResponseData.data) {
-          setInvitationCodeData(generateInviteCodeResponseData.data);
+
+        console.log('请求获取代理API的结果',result)
+        if (result.success) {
+          setAgentInfo(result.data);
+        } else {
+          setError(result.message || '获取代理信息失败');
         }
-
-        // 获取团队成员数据
-        const agentteamResponse = await fetch('/api/inviteagent/myagentteam', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-User-Id': currentUserId || ''
-          },
-        });
-        
-        const agentteamResponseData: any = await agentteamResponse.json();
-        
-        // 处理团队成员列表数据
-        const teamResponse = agentteamResponseData.data;
-        if (teamResponse?.list) {
-          const formattedInviteRecords: InviteRecord[] = teamResponse.list.map((item: any) => ({
-            id: item.id,
-            inviteeName: item.username,
-            inviteeAvatar: <UserOutlined />,
-            inviteDate: item.createTime,
-            joinDate: item.registerTime,
-            status: 'active',
-            completedTasks: 0, // 假设API当前未返回该字段，暂时设置为0
-            totalEarnings: 0, // 假设API当前未返回该字段，暂时设置为0
-            myCommission: 0, // 假设API当前未返回该字段，暂时设置为0
-          }));
-          setInviteRecords(formattedInviteRecords);
-        }
-
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : '获取代理人统计数据失败';
+        const errorMessage = err instanceof Error ? `网络或系统错误: ${err.message}` : '获取代理信息时发生未知错误';
         setError(errorMessage);
       } finally {
         setLoading(false);
       }
     };
     
-    fetchData();
-  }, [currentUserId]);
+    fetchAgentInfo();
+  }, []);
 
   // 复制邀请码
   const copyInviteLink = async () => {
     try {
-      const inviteCode = invitationCodeData?.inviteCode || '';
+      const inviteCode = agentInfo?.invite_code || '';
       await navigator.clipboard.writeText(inviteCode);
       setCopied(true); 
       setTimeout(() => {
@@ -253,7 +65,6 @@ const currentUserId = userInfo.id;
       alert('复制失败，请手动复制');
     }
   };
-  
   
   return (
     <div className="min-h-screen bg-gray-50">
@@ -336,67 +147,20 @@ const currentUserId = userInfo.id;
             </h3>
             <div className="grid grid-cols-3 gap-4 text-center">
               <div className="bg-blue-100 rounded-xl p-2">
-                <div className="text-2xl font-bold text-blue-600">{agentStatsData?.totalInvited || 0}</div>
+                <div className="text-2xl font-bold text-blue-600">0</div>
                 <div className="text-sm">累计邀请</div>
               </div>
               <div className="bg-blue-100 rounded-xl p-2 ">
-                <div className="text-2xl font-bold text-green-600">{agentStatsData?.activeUsers || 0}</div>
+                <div className="text-2xl font-bold text-green-600">0</div>
                 <div className="text-sm ">活跃用户</div>
               </div>
               <div className="bg-blue-100 rounded-xl p-2 ">
-                <div className="text-2xl font-bold text-orange-600">¥{(agentStatsData?.totalReward || 0).toFixed(2)}</div>
+                <div className="text-2xl font-bold text-orange-600">¥0.00</div>
                 <div className="text-sm ">累计佣金</div>
               </div>
             </div>
           </div>
           
-          {/* 自定义成功提示框 */}
-          <Modal
-            title="操作成功"
-            open={showSuccessModal}
-            onOk={() => {
-              setShowSuccessModal(false);
-              window.location.reload();
-            }}
-            onCancel={() => setShowSuccessModal(false)}
-            okText="确定"
-            cancelText="取消"
-            centered
-            footer={[
-              <button
-                key="cancel"
-                onClick={() => setShowSuccessModal(false)}
-                className="px-6 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors mr-4 font-medium"
-              >
-                取消
-              </button>,
-              <button
-                key="confirm"
-                onClick={() => {
-                  setShowSuccessModal(false);
-                  window.location.reload();
-                }}
-                className="px-6 py-2.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium shadow-sm hover:shadow"
-              >
-                确定
-              </button>
-            ]}
-            className="custom-modal"
-            width={420}
-            style={{
-              borderRadius: '16px',
-            }}
-          >
-            <div className="text-center py-6">
-              <div className="flex justify-center mb-5">
-                <CheckCircleOutlined className="text-green-500 text-5xl" />
-              </div>
-              <p className="text-xl font-bold text-gray-800 mb-2">邀请码生成成功！</p>
-              <p className="text-gray-600">点击确定刷新页面查看邀请码</p>
-            </div>
-          </Modal>
-     
-
           {/* 我的专属邀请码 - 美化样式 */}
           <div className="rounded-xl w-full shadow-md p-6 bg-white transition-all hover:shadow-lg">
             <h3 className="font-bold text-xl text-gray-800 mb-5 flex items-center">
@@ -405,11 +169,11 @@ const currentUserId = userInfo.id;
             </h3>
             <div className="w-full items-center mb-6">
               <div className="text-center py-5 px-6 rounded-xl mb-6 border border-blue-200 bg-blue-100">
-                <span className="text-3xl font-bold text-blue-600 tracking-wider">{invitationCodeData?.inviteCode || '点击生成邀请码按钮生成专属邀请码'}</span>
+                <span className="text-3xl font-bold text-blue-600 tracking-wider">{agentInfo?.invite_code || '暂无邀请码'}</span>
               </div>
             </div>
             <div className="w-full items-center mb-4 space-y-4">
-              {!showGenerateButton && (
+              {agentInfo?.invite_code && (
                 <button 
                   onClick={copyInviteLink}
                   className="bg-blue-500 text-white px-8 py-3 rounded-lg hover:bg-blue-600 transition-all duration-300 w-full transform hover:scale-[1.02] flex items-center justify-center"
@@ -418,28 +182,7 @@ const currentUserId = userInfo.id;
                   {copied ? '已复制' : '复制邀请码'}
                 </button>
               )}
-              {showGenerateButton && (
-                <button 
-                  onClick={GenerateInviteCode}
-                  className="bg-green-500 text-white px-8 py-3 rounded-lg hover:bg-green-600 transition-all duration-300 w-full transform hover:scale-[1.02] flex items-center justify-center"
-                  disabled={generatingInviteCode}
-                >
-                  {generatingInviteCode ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-opacity-30 border-t-white mr-2"></div>
-                      生成中...
-                    </>
-                  ) : (
-                    <>
-                      <CodeOutlined className="mr-2" />
-                      生成邀请码
-                    </>
-                  )}
-                </button>
-              )}
             </div>
-            
-
           </div>
           {/* 邀请奖励规则 */}
           <div className="bg-white rounded-xl shadow-md p-6 transition-all hover:shadow-lg">
@@ -474,72 +217,15 @@ const currentUserId = userInfo.id;
           <div className="bg-white rounded-lg shadow-sm">
             <div className="p-4 border-b">
               <div className="text-center">
-                <h3 className="font-bold text-gray-800">已邀请好友 ({inviteRecords.filter((record: InviteRecord) => record.status !== 'pending').length}人)</h3>
+                <h3 className="font-bold text-gray-800">已邀请好友 (0人)</h3>
               </div>
             </div>
             <div className="divide-y">
-              {inviteRecords.filter((record: InviteRecord) => record.status !== 'pending').length > 0 ? (
-                inviteRecords.filter((record: InviteRecord) => record.status !== 'pending').map((invite: InviteRecord) => (
-                  <div key={invite.id} className="p-4">
-                    {/* 被邀请人基本信息 */}
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-lg">
-                          {invite.inviteeAvatar || <UserOutlined />}
-                        </div>
-                        <div>
-                          <div className="font-medium text-gray-800">{invite.inviteeName || '未知用户'}</div>
-                          <div className="text-xs ">
-                            邀请时间: {new Date(invite.inviteDate).toLocaleDateString()}                         
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className={`text-sm font-medium ${invite.status === 'active' ? 'text-green-600' : invite.status === 'joined' ? 'text-blue-600' : 'text-yellow-600'}`}>
-                          {invite.status === 'active' ? '活跃中' : invite.status === 'joined' ? '已注册' : '待注册'}
-                        </div>
-                        <div className="text-xs ">
-                          {invite.status !== 'pending' && `已完成${invite.completedTasks || 0}个任务`}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* 被邀请人数据统计 - 调整样式 */}
-                    {invite.status !== 'pending' && (
-                      <div className="grid grid-cols-3 gap-3">
-                        <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 text-center">
-                          <div className="text-sm font-bold text-gray-800">¥{(invite.totalEarnings || 0).toFixed(2)}</div>
-                          <div className="text-xs ">总收益</div>
-                        </div>
-                        <div className="bg-green-50 p-3 rounded-lg border border-green-200 text-center">
-                          <div className="text-sm font-bold text-green-600">¥{(invite.myCommission || 0).toFixed(2)}</div>
-                          <div className="text-xs ">我的佣金</div>
-                        </div>
-                        <div className="bg-blue-50 p-3 rounded-lg border border-blue-200 text-center">
-                          <div className="text-sm font-bold text-blue-600">{invite.completedTasks || 0}</div>
-                          <div className="text-xs ">完成任务</div>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* 查看详情按钮 */}
-                    <div className="mt-3 flex justify-end">
-                      <button 
-                        onClick={() => router.push(`/commenter/invite/details/${invite.id}` as any)}
-                        className="text-blue-500 text-sm hover:text-blue-600"
-                      >
-                        查看详情
-                      </button>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="p-8 text-center">
-                  <UserAddOutlined className="text-gray-400 text-5xl mb-4" />
-                  <div className="">您还没有邀请任何好友</div>
-                  <div className="text-gray-400 text-sm mt-2">快去邀请好友加入吧，一起赚取佣金！</div>
-                </div>
-              )}
+              <div className="p-8 text-center">
+                <UserAddOutlined className="text-gray-400 text-5xl mb-4" />
+                <div className="">您还没有邀请任何好友</div>
+                <div className="text-gray-400 text-sm mt-2">快去邀请好友加入吧，一起赚取佣金！</div>
+              </div>
             </div>
           </div>
         </div>
@@ -553,94 +239,40 @@ const currentUserId = userInfo.id;
             <h3 className="font-bold text-gray-800 mb-4">佣金统计</h3>
             <div className="grid grid-cols-4 gap-3">
           <div className="text-center p-3 bg-gray-50 rounded">
-            <div className="text-lg font-bold text-gray-600">¥{(agentStatsData?.totalReward || 0).toFixed(2)}</div>
+            <div className="text-lg font-bold text-gray-600">¥0.00</div>
             <div className="text-xs ">累计佣金</div>
           </div>
           <div className="text-center p-3 bg-blue-50 rounded">
-            <div className="text-lg font-bold text-blue-600">¥{(agentStatsData?.monthReward || 0).toFixed(2)}</div>
+            <div className="text-lg font-bold text-blue-600">¥0.00</div>
             <div className="text-xs ">本月佣金</div>
           </div>
           <div className="text-center p-3 bg-green-50 rounded">
-            <div className="text-lg font-bold text-green-600">¥{(agentStatsData?.pendingReward || 0).toFixed(2)}</div>
+            <div className="text-lg font-bold text-green-600">¥0.00</div>
             <div className="text-xs ">昨日佣金</div>
           </div>
           <div className="text-center p-3 bg-purple-50 rounded">
-            <div className="text-lg font-bold text-purple-600">¥{(agentStatsData?.todayReward || 0).toFixed(2)}</div>
+            <div className="text-lg font-bold text-purple-600">¥0.00</div>
             <div className="text-xs ">今日佣金</div>
           </div>
         </div>
           </div>
           
-          {/* 佣金来源分析 - 暂时隐藏，后续可以根据API返回数据添加 */}
-
           {/* 佣金明细 */}
           <div className="bg-white rounded-lg shadow-sm">
             <div className="p-4 border-b">
               <div className="flex justify-between items-center">
                 <h3 className="font-bold text-gray-800">佣金明细</h3>
-                <span className="text-xs ">最近{Math.min(commissionRecords.length, 10)}条记录</span>
+                <span className="text-xs ">最近0条记录</span>
               </div>
             </div>
             <div className="divide-y overflow-y-auto">
-              {/* 限制只显示前10条记录 */}
-              {commissionRecords.filter(record => record.type !== 'team').length > 0 ? (
-                commissionRecords.filter(record => record.type !== 'team').slice(0, 10).map((record) => (
-                  <div key={record.id} className="p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-1">
-                          <span className="font-medium text-gray-800">{record.memberName}</span>
-                          {record.type === 'register' ? (
-                            <span className="bg-green-100 text-green-600 px-2 py-1 rounded text-xs">注册奖励</span>
-                          ) : (
-                            <span className="bg-blue-100 text-blue-600 px-2 py-1 rounded text-xs">任务佣金</span>
-                          )}
-                        </div>
-                        <div className="text-sm  mb-1">{record.taskName}</div>
-                        <div className="text-xs ">{new Date(record.date).toLocaleString()}</div>
-                        {record.type === 'task' && (
-                          <div className="text-xs ">
-                            佣金
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-right ml-4">
-                        <div className={record.type === 'register' ? 'font-bold text-green-600' : 'font-bold text-blue-600'}>+¥{record.commission.toFixed(2)}</div>
-                        <div className="text-xs ">
-                          {record.type === 'register' ? '注册奖励' : '佣金'}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* 查看佣金详情按钮 */}
-                    <div className="mt-3 flex justify-end">
-                      <button
-                        onClick={() => router.push(`/commenter/invite/commission-details/${record.id}` as any)}
-                        className="text-blue-500 text-sm hover:text-blue-600"
-                      >
-                        查看详情
-                      </button>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="p-8 text-center">
-                  <DollarOutlined className="text-gray-400 text-5xl mb-4" />
-                  <div className="">暂无佣金记录</div>
-                  <div className="text-gray-400 text-sm mt-2">邀请好友完成任务，即可获得佣金奖励！</div>
-                </div>
-              )}
+              <div className="p-8 text-center">
+                <DollarOutlined className="text-gray-400 text-5xl mb-4" />
+                <div className="">暂无佣金记录</div>
+                <div className="text-gray-400 text-sm mt-2">邀请好友完成任务，即可获得佣金奖励！</div>
+              </div>
             </div>
           </div>
-          
-          {/* 查看更多 */}
-          {commissionRecords.filter(record => record.type !== 'team').length > 10 && (
-            <div className="p-4 border-t bg-gray-50">
-              <button className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition-colors">
-                查看全部佣金记录
-              </button>
-            </div>
-          )}
         </div>
       )}
 

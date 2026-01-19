@@ -1,6 +1,8 @@
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { Providers } from '@/components/providers/Providers';
+// 导入支付密码检查组件
+import PaymentPasswordCheck from '@/components/PaymentPasswordCheck';
 
 export const metadata = {
   title: '抖音评论派单系统',
@@ -44,6 +46,8 @@ export default function RootLayout({
       )}>
         <Providers>
           {children}
+          {/* 支付密码检查组件 */}
+          <PaymentPasswordCheck />
         </Providers>
       </body>
     </html>

@@ -218,8 +218,8 @@ export default function CommenterLoginPage() {
           // 获取重定向参数
           const urlParams = new URLSearchParams(window.location.search);
           const redirectPath = urlParams.get('redirect') || getCommenterHomePath();
-          router.push(redirectPath);
           console.log(`登录成功，跳转到 ${redirectPath}`);
+          router.push(redirectPath);
         }, 1000);
 
       } else {

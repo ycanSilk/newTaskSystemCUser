@@ -2,28 +2,19 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-
-
-interface UserProfile {
-  id: string;
-  avatar: string;
-  name: string;
-  phone: string;
-  email: string | null;
-  invitationCode: string;
-  createdAt: string;
-}
+// 导入类型定义
+import { GetUserInfoResponse } from '@/app/types/users/getUserInfoTypes';
 
 export default function PersonalInfoPage() {
   const router = useRouter();
   
   // 用户个人信息状态
-  const [userProfile, setUserProfile] = useState<UserProfile>({
+  const [userProfile, setUserProfile] = useState({
     id: '',
     avatar: '/images/default.png',
     name: '',
     phone: '',
-    email: null,
+    email: '',
     invitationCode: '',
     createdAt: ''
   });
@@ -38,8 +29,8 @@ export default function PersonalInfoPage() {
       setIsLoading(true);
       setError(null);
       
-      // 执行API请求，使用credentials: 'include'自动携带HttpOnly Cookie
-      const apiUrl = '/api/users/getloginuserinfo';
+      // 执行API请求，调用中间件路由
+      const apiUrl = '/api/users/getUserInfo';
       const response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
@@ -61,22 +52,22 @@ export default function PersonalInfoPage() {
         }
       }
       
-      // 解析成功响应
-      const data = await response.json();
+      // 解析成功响应，使用指定的类型定义
+      const data: GetUserInfoResponse = await response.json();
       
       // 验证数据结构
-      if (data.success && data.data && data.data.userInfo) {
-        const userInfo = data.data.userInfo;
+      if (data.code === 0 && data.data) {
+        const userInfo = data.data;
         
         // 更新用户信息状态
         setUserProfile({
-          id: userInfo.id || '',
+          id: String(userInfo.id || ''),
           name: userInfo.username || '',
           phone: userInfo.phone || '',
           email: userInfo.email,
-          invitationCode: userInfo.invitationCode || '',
-          createdAt: userInfo.createTime ? new Date(userInfo.createTime).toLocaleDateString() : '',
-          avatar: userInfo.avatar || '/images/default.png'
+          invitationCode: userInfo.invite_code || '',
+          createdAt: userInfo.created_at ? new Date(userInfo.created_at).toLocaleDateString() : '',
+          avatar: '/images/default.png' // 暂时使用默认头像
         });
       } else {
         throw new Error(data.message || '获取用户信息失败');
@@ -204,7 +195,7 @@ export default function PersonalInfoPage() {
           <InfoItem label="注册时间" value={userProfile.createdAt || '未获取'} editable={false} />
 
 
-          <div onClick={() => router.push('/commenter/profile/changepwd')} className="p-4 border-b border-gray-100  justify-between text-center items-center cursor-pointer hover:bg-blue-200">
+          <div onClick={() => router.push('/commenter/profile/changepwd')} className="p-4 border-b border-gray-100 bg-blue-500 hover:bg-blue-600 text-white text-center shadow">
             修改密码
           </div>
         </div>

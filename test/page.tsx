@@ -3,8 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShopOutlined, WalletOutlined, EditOutlined, OrderedListOutlined, BarChartOutlined, CreditCardOutlined, RightOutlined, BellOutlined, MessageOutlined, UserAddOutlined, DownloadOutlined } from '@ant-design/icons';
 import { message } from 'antd';
-// 导入store中的用户信息
+// 导入Zustand用户状态存储
 import { useUserStore } from '@/store/userStore';
+// 导入用户信息类型定义
+
 
 interface BalanceData {
   balance: number;
@@ -18,13 +20,14 @@ interface MenuItem {
   path: string;
 }
 
-export default function commenterProfilePage() {
+export default function PublisherProfilePage() {
   const router = useRouter();
   const [balance, setBalance] = useState<BalanceData>({ balance: 0 });
+  // 从Zustand store获取用户信息
+  const { currentUser, fetchUser } = useUserStore();
+  // 未读通知数量
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
-  // 从store获取用户信息
-  const { currentUser, fetchUser, isLoading } = useUserStore();
-
+  
   // 组件挂载时，确保用户信息已加载
   useEffect(() => {
     if (!currentUser) {
@@ -32,6 +35,7 @@ export default function commenterProfilePage() {
     }
   }, [currentUser, fetchUser]);
 
+  // 获取余额数据和未读通知数量
   useEffect(() => {
     // 模拟数据加载
     setTimeout(() => {
@@ -66,56 +70,42 @@ export default function commenterProfilePage() {
       title: '账户余额',
       icon: <WalletOutlined className="text-xl" />,
       color: 'bg-yellow-100',
-      path: '/commenter/balance'
+      path: '/publisher/balance'
     },
     {
-      id: 'withdrawal-list',
-      title: '提现明细',
-      icon: <WalletOutlined className="text-xl" />,
-      color: 'bg-yellow-100',
-      path: '/commenter/withdrawal/list'
+      id: 'payment-method',
+      title: '支付设置',
+      icon: <CreditCardOutlined className="text-xl" />,
+      color: 'bg-purple-100',
+      path: '/publisher/profile/paymentsettings'
     },
     {
       id: 'order-management',
       title: '订单管理',
       icon: <OrderedListOutlined className="text-xl" />,
       color: 'bg-green-100',
-      path: '/commenter/order-management'
+      path: '/publisher/orders'
     },
     {
       id: 'data-stats',
-      title: '收益统计',
+      title: '数据总览',
       icon: <BarChartOutlined className="text-xl" />,
       color: 'bg-blue-100',
-      path: '/commenter/earnings'
-    },
-    {
-      id: 'bankcards',
-      title: '银行卡管理',
-      icon: <BarChartOutlined className="text-xl" />,
-      color: 'bg-blue-100',
-      path: '/commenter/bank-cards'
-    },
-    { 
-      id: 'paymentsettings',
-      title: '支付设置',      
-      icon: <BarChartOutlined className="text-xl" />,      
-      color: 'bg-blue-100',      
-      path: '/commenter/profile/paymentsettings'    
+      path: '/publisher/profile/data-stats'
     },
     {
       id: 'notifications',
       title: '通知提醒',
       icon: <BellOutlined className="text-xl" />,
       color: 'bg-orange-100',
-      path: '/commenter/notification'
+      path: '/publisher/notification'
     },
     {
       id: 'customer-service',
       title: '联系客服',
       icon: <MessageOutlined className="text-xl" />,
       color: 'bg-cyan-100',
-      path: '/commenter/customer-service'
+      path: '/publisher/customer-service'
     },
     {
       id: 'cooperation-agent',
@@ -129,7 +119,7 @@ export default function commenterProfilePage() {
       title: '抖音版本下载',
       icon: <DownloadOutlined className="text-xl" />,
       color: 'bg-pink-100',
-      path: '/commenter/douyin-version'
+      path: '/publisher/douyin-version'
     }
   ];
 
@@ -146,20 +136,21 @@ export default function commenterProfilePage() {
   return (
     <div className="min-h-screen pb-28">
       {/* 顶部用户信息区域 */}
-      <div className="bg-blue-500 text-white mb-5">
+      <div className="bg-blue-500 text-white p-3 mb-5 mt-5">
         <div 
-          className="flex items-center justify-between space-x-4 mb-4 cursor-pointer rounded-lg p-4 transition-colors"
-          onClick={() => router.push('/commenter/profile/userinfo' as any)}
+          className="flex items-center justify-between space-x-4 cursor-pointer  p-2 transition-colors"
+          onClick={() => router.push('/publisher/profile/settings')}
         >
           <div className="flex items-center space-x-4">
             <div className="w-16 h-16 bg-white bg-opacity-20 rounded-lg flex items-center justify-center text-2xl">
-              <img src={'/images/default.png'} alt="User Avatar" className="w-full h-full overflow-hidden rounded-lg" />
+              <img src="/images/default.png" alt="" className="w-full h-full overflow-hidden rounded-lg" />
             </div>
             <div>
               <span className="flex font-bold text-lg items-center">
-                {isLoading ? 'Loading...' : currentUser?.username}
-              </span>
-              <span className="flex text-sm opacity-80">{isLoading ? 'Loading...' : currentUser?.phone}</span>
+                  {currentUser?.username || ''}
+                </span>
+              <span className="flex text-sm opacity-80">{currentUser?.phone || '未设置手机号'}</span>
+              <span className="flex text-sm opacity-80">{currentUser?.email || '未设置邮箱'}</span>
             </div>
           </div>
           <div className="text-white">
@@ -178,6 +169,7 @@ export default function commenterProfilePage() {
                 onClick={() => handleMenuItemClick(item.path)}
                 className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors"
                 style={{
+                  // 增大移动端触摸区域
                   minHeight: '60px',
                   touchAction: 'manipulation'
                 }}
@@ -207,7 +199,7 @@ export default function commenterProfilePage() {
       <div>
         <div className="text-center text-gray-500 text-xs">
           <p>商家中心 v1.0.0</p>
-          <p className="mt-1">© 2023 版权所有</p>
+          <p className="mt-1">© 2025 版权所有</p>
         </div>
       </div>
     </div>

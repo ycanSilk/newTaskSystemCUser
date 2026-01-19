@@ -1,102 +1,81 @@
-// Auth模块 - 注册相关类型定义
-// 这个文件包含了注册请求和响应的类型定义，确保类型安全
-
-/**
- * 获取用户信息响应数据类型
- * 定义了获取用户信息成功后返回的用户数据格式,包含用户ID、用户名、邮箱、手机号、组织名称、组织负责人、钱包ID等信息
- * 因为是GET请求，所以响应数据中不包含密码等敏感信息，不需要创建request
- */
-export interface GetUserInfoResponseData {
-
-  /**
-   * 用户ID
-   * 新注册用户的唯一标识
-   */
-  id: string;
-  
-  /**
-   * 用户名
-   * 注册成功的用户名
-   */
-  username: string;
-  
-  /**
-   * 邮箱
-   * 注册成功的邮箱地址
-   */
-  email: string;
-  
-  /**
-   * 手机号
-   * 注册成功的手机号
-   */
-  phone: string;
-  
-  /**
-   * 组织名称
-   * 注册成功的组织名称
-   */
-  organization_name: string;
-  
-  /**
-   * 组织负责人
-   * 注册成功的组织负责人
-   */
-  organization_leader: string;
-  
-  /**
-   * 钱包ID
-   * 新注册用户的钱包ID
-   */
-  wallet_id: string;
-
-
-  wallet: {
-    /**
-     * 钱包余额，保留2位小数
-     * 新注册用户的钱包余额
-     */
-    balance: number;
-  }
-
-  status: string;   // 用户状态，如活跃、已禁用等    1，启用；2，禁用
-
-  reason: null,
-
-  create_ip: string;    // 注册用户的IP地址
-
-  created_at: string;    // 用户创建时间
-
-  updated_at: string;    // 用户最近更新时间    
-
+// 钱包信息接口
+export interface Wallet {
+  /** 钱包余额，字符串类型，保留两位小数 */
+  balance: string;
 }
 
-/**
- * 注册响应类型
- * 定义了注册请求的完整响应格式
- */
+// 用户信息接口
+export interface UserInfo {
+  /** 用户ID，数字类型 */
+  id: number;
+  /** 用户名，字符串类型 */
+  username: string;
+  /** 邮箱，字符串类型 */
+  email: string;
+  /** 手机号，字符串类型 */
+  phone: string;
+  /** 邀请码，字符串类型 */
+  invite_code: string;
+  /** 上级用户ID，数字类型 */
+  parent_id: number;
+  /** 是否为代理，数字类型，1表示是，0表示否 */
+  is_agent: number;
+  /** 钱包ID，数字类型 */
+  wallet_id: number;
+  /** 钱包信息，Wallet类型 */
+  wallet: Wallet;
+  /** 用户状态，数字类型，1表示正常，0表示禁用 */
+  status: number;
+  /** 状态变更原因，字符串类型，可能为null */
+  reason: string | null;
+  /** 注册IP，字符串类型 */
+  create_ip: string;
+  /** 创建时间，字符串类型，格式为YYYY-MM-DD HH:MM:SS */
+  created_at: string;
+  /** 更新时间，字符串类型，格式为YYYY-MM-DD HH:MM:SS */
+  updated_at: string;
+}
+
+// API响应数据接口
+export interface GetUserInfoResponseData {
+  /** 用户ID，数字类型 */
+  id: number;
+  /** 用户名，字符串类型 */
+  username: string;
+  /** 邮箱，字符串类型 */
+  email: string;
+  /** 手机号，字符串类型 */
+  phone: string;
+  /** 邀请码，字符串类型 */
+  invite_code: string;
+  /** 上级用户ID，数字类型 */
+  parent_id: number;
+  /** 是否为代理，数字类型，1表示是，0表示否 */
+  is_agent: number;
+  /** 钱包ID，数字类型 */
+  wallet_id: number;
+  /** 钱包信息，Wallet类型 */
+  wallet: Wallet;
+  /** 用户状态，数字类型，1表示正常，0表示禁用 */
+  status: number;
+  /** 状态变更原因，字符串类型，可能为null */
+  reason: string | null;
+  /** 注册IP，字符串类型 */
+  create_ip: string;
+  /** 创建时间，字符串类型，格式为YYYY-MM-DD HH:MM:SS */
+  created_at: string;
+  /** 更新时间，字符串类型，格式为YYYY-MM-DD HH:MM:SS */
+  updated_at: string;
+}
+
+// API响应接口
 export interface GetUserInfoResponse {
-  /**
-   * 状态码
-   * 0表示成功，其他表示失败
-   */
+  /** 响应码，数字类型，0表示成功，非0表示失败 */
   code: number;
-  
-  /**
-   * 消息
-   * 注册结果的文字描述
-   */
+  /** 响应消息，字符串类型，描述响应结果 */
   message: string;
-  
-  /**
-   * 数据
-   * 注册成功时返回的用户数据
-   */
+  /** 响应数据，GetUserInfoResponseData类型 */
   data: GetUserInfoResponseData;
-  
-  /**
-   * 时间戳
-   * 响应生成的时间，单位为秒
-   */
+  /** 时间戳，数字类型，表示响应时间 */
   timestamp: number;
 }
