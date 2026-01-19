@@ -4,6 +4,10 @@ import { EditOutlined, CopyOutlined, LinkOutlined } from '@ant-design/icons';
 
 // 导入图片上传组件
 import ImageUpload from '@/components/imagesUpload/ImageUpload';
+// 导入空状态组件
+import EmptyState from '@/components/NoTaskHint/NoTaskHint';
+// 导入时间排序组件
+import TimeOrder from '@/components/TimeOrder/TimeOrder';
 
 // 导入外部类型定义
 import {
@@ -25,11 +29,23 @@ interface ProgressTasksTabProps {
   uploadStatus?: Record<string, 'compressing' | 'uploading' | 'success' | 'error'>;
 }
 
-const ProgressTasksTab: React.FC<ProgressTasksTabProps> = ({ handleViewImage, setModalMessage, setShowModal, handleCopyComment, handleUploadScreenshot, handleRemoveImage, handleSubmitOrder, isSubmitting }) => {
+const ProgressTasksTab: React.FC<ProgressTasksTabProps> = ({
+  handleViewImage,
+  setModalMessage,
+  setShowModal,
+  handleCopyComment,
+  handleUploadScreenshot,
+  handleRemoveImage,
+  handleSubmitOrder,
+  isSubmitting
+}) => {
   // 状态管理
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // 排序状态管理
+  const [sortField, setSortField] = useState<string>('created_at');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   
   // 组件加载时调用API获取数据
   useEffect(() => {
@@ -47,7 +63,9 @@ const ProgressTasksTab: React.FC<ProgressTasksTabProps> = ({ handleViewImage, se
         const responseData: GetMyAcceptedTaskListResponse = await response.json();
         
         if (responseData.code === 0) {
-          setTasks(responseData.data.list);
+          // 对任务列表进行排序
+          const sortedTasks = sortTasks(responseData.data.list, sortField, sortOrder);
+          setTasks(sortedTasks);
         } else {
           setErrorMessage(responseData.message || '获取任务失败');
           setModalMessage('获取任务失败: ' + (responseData.message || '未知错误'));
@@ -66,7 +84,27 @@ const ProgressTasksTab: React.FC<ProgressTasksTabProps> = ({ handleViewImage, se
     };
     
     fetchTasks();
-  }, [setModalMessage, setShowModal]);
+  }, [setModalMessage, setShowModal, sortField, sortOrder]);
+  
+  // 任务排序函数
+  const sortTasks = (tasks: Task[], field: string, order: 'asc' | 'desc'): Task[] => {
+    return [...tasks].sort((a, b) => {
+      const aValue = a[field as keyof Task] as string;
+      const bValue = b[field as keyof Task] as string;
+      
+      if (order === 'asc') {
+        return aValue.localeCompare(bValue);
+      } else {
+        return bValue.localeCompare(aValue);
+      }
+    });
+  };
+  
+  // 排序变化处理函数
+  const handleSortChange = (field: string, order: 'asc' | 'desc') => {
+    setSortField(field);
+    setSortOrder(order);
+  };
     // 组件内部状态管理
     const [reviewLinks, setReviewLinks] = useState<Record<string, string>>({});
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -182,19 +220,25 @@ const ProgressTasksTab: React.FC<ProgressTasksTabProps> = ({ handleViewImage, se
         </div>
       )}
 
-      {/* 错误状态显示 */}
+      {/* 空状态显示 */}
       {!isLoading && tasks.length === 0 && (
-        <div className="text-center py-10 bg-gray-50 rounded-lg">
-          <svg className="w-16 h-16 mx-auto text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <p className="mt-4 text-gray-500">暂无进行中的任务</p>
-          <button 
-            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-700 transition-colors"
-            onClick={() => handleRefreshTasks()}
-          >
-            刷新任务列表
-          </button>
+        <EmptyState
+          message="暂无进行中的任务"
+          buttonText="刷新任务列表"
+          showButton={true}
+          onButtonClick={() => handleRefreshTasks()}
+        />
+      )}
+
+      {/* 排序按钮 */}
+      {!isLoading && tasks.length > 0 && (
+        <div className="mb-4 flex justify-end">
+          <TimeOrder
+            sortField={sortField}
+            currentOrder={sortOrder}
+            onSortChange={handleSortChange}
+            buttonText="按接受时间排序"
+          />
         </div>
       )}
 

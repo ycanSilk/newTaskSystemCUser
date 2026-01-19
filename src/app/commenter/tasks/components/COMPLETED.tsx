@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { MessageOutlined } from '@ant-design/icons';
 
+// 导入时间排序组件
+import TimeOrder from '@/components/TimeOrder/TimeOrder';
+
 // 导入类型定义
 import { CompletedTask, CompletedTasksResponse } from '../../../types/task/getMyAceepedTaskListComponents/COMPLETED';
 
@@ -20,6 +23,29 @@ const CompletedTasksTab: React.FC<CompletedTasksTabProps> = ({
   const [tasks, setTasks] = useState<CompletedTask[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // 排序状态管理
+  const [sortField, setSortField] = useState<string>('reviewed_at');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  // 任务排序函数
+  const sortTasks = (tasks: CompletedTask[], field: string, order: 'asc' | 'desc'): CompletedTask[] => {
+    return [...tasks].sort((a, b) => {
+      const aValue = a[field as keyof CompletedTask] as string;
+      const bValue = b[field as keyof CompletedTask] as string;
+      
+      if (order === 'asc') {
+        return aValue.localeCompare(bValue);
+      } else {
+        return bValue.localeCompare(aValue);
+      }
+    });
+  };
+
+  // 排序变化处理函数
+  const handleSortChange = (field: string, order: 'asc' | 'desc') => {
+    setSortField(field);
+    setSortOrder(order);
+  };
 
   // 组件加载时调用API获取数据
   useEffect(() => {
@@ -37,7 +63,9 @@ const CompletedTasksTab: React.FC<CompletedTasksTabProps> = ({
         const responseData: CompletedTasksResponse = await response.json();
         
         if (responseData.code === 0) {
-          setTasks(responseData.data.list);
+          // 对任务列表进行排序
+          const sortedTasks = sortTasks(responseData.data.list, sortField, sortOrder);
+          setTasks(sortedTasks);
         } else {
           setErrorMessage(responseData.message || '获取任务失败');
           if (setModalMessage && setShowModal) {
@@ -60,7 +88,7 @@ const CompletedTasksTab: React.FC<CompletedTasksTabProps> = ({
     };
     
     fetchTasks();
-  }, [setModalMessage, setShowModal]);
+  }, [setModalMessage, setShowModal, sortField, sortOrder]);
 
   return (
     <div className="mt-6">
@@ -71,7 +99,18 @@ const CompletedTasksTab: React.FC<CompletedTasksTabProps> = ({
       ) : tasks.length === 0 ? (
         <div className="text-center py-8 text-gray-500">暂无已完成任务</div>
       ) : (
-        tasks.map((task) => (
+        <>
+          {/* 排序按钮 */}
+          <div className="mb-4 flex justify-end">
+            <TimeOrder
+              sortField={sortField}
+              currentOrder={sortOrder}
+              onSortChange={handleSortChange}
+              buttonText="按审核通过时间排序"
+            />
+          </div>
+          
+          {tasks.map((task) => (
           <div key={task.record_id} className="rounded-lg p-4 shadow-sm transition-all hover:shadow-md bg-white">
             <div className="flex justify-between items-start">
               <h3 className="text-sm text-black inline-block flex items-center">
@@ -179,7 +218,8 @@ const CompletedTasksTab: React.FC<CompletedTasksTabProps> = ({
               </button>
             </div>
           </div>
-        ))
+        ))}
+        </>
       )}
     </div>
   );

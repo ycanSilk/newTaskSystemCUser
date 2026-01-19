@@ -3,6 +3,10 @@ import { useRouter } from 'next/navigation';
 
 // 导入类型定义
 import { Task, GetMyPendingTasksResponse } from '@/app/types/task/getMyAceepedTaskListComponents/SUBMITTED';
+// 导入无任务提示组件
+import NoTaskHint from '@/components/NoTaskHint/NoTaskHint';
+// 导入时间排序组件
+import TimeOrder from '@/components/TimeOrder/TimeOrder';
 
 interface PendingReviewTasksTabProps {
   handleViewImage: (imageUrl: string) => void;
@@ -19,6 +23,29 @@ const PendingReviewTasksTab: React.FC<PendingReviewTasksTabProps> = ({
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // 排序状态管理
+  const [sortField, setSortField] = useState<string>('submitted_at');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  // 任务排序函数
+  const sortTasks = (tasks: Task[], field: string, order: 'asc' | 'desc'): Task[] => {
+    return [...tasks].sort((a, b) => {
+      const aValue = a[field as keyof Task] as string;
+      const bValue = b[field as keyof Task] as string;
+      
+      if (order === 'asc') {
+        return aValue.localeCompare(bValue);
+      } else {
+        return bValue.localeCompare(aValue);
+      }
+    });
+  };
+
+  // 排序变化处理函数
+  const handleSortChange = (field: string, order: 'asc' | 'desc') => {
+    setSortField(field);
+    setSortOrder(order);
+  };
 
   // 组件加载时调用API获取数据
   useEffect(() => {
@@ -36,7 +63,9 @@ const PendingReviewTasksTab: React.FC<PendingReviewTasksTabProps> = ({
         const responseData: GetMyPendingTasksResponse = await response.json();
         
         if (responseData.code === 0) {
-          setTasks(responseData.data.list);
+          // 对任务列表进行排序
+          const sortedTasks = sortTasks(responseData.data.list, sortField, sortOrder);
+          setTasks(sortedTasks);
         } else {
           setErrorMessage(responseData.message || '获取任务失败');
           setModalMessage('获取任务失败: ' + (responseData.message || '未知错误'));
@@ -55,11 +84,83 @@ const PendingReviewTasksTab: React.FC<PendingReviewTasksTabProps> = ({
     };
     
     fetchTasks();
-  }, [setModalMessage, setShowModal]);
+  }, [setModalMessage, setShowModal, sortField, sortOrder]);
 
   return (
     <div className="mt-6">
-      {tasks.map((task) => (
+      {/* 加载状态 */}
+      {isLoading && (
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-blue-600">加载中...</p>
+        </div>
+      )}
+
+      {/* 错误状态 */}
+      {!isLoading && errorMessage && (
+        <div className="text-center py-8 bg-red-50 rounded-lg">
+          <p className="text-red-500">{errorMessage}</p>
+        </div>
+      )}
+
+      {/* 无任务状态 */}
+      {!isLoading && !errorMessage && tasks.length === 0 && (
+        <NoTaskHint
+          message="暂无待审核任务"
+          buttonText="刷新任务列表"
+          showButton={false}
+          onButtonClick={() => {
+            const fetchTasks = async () => {
+              setIsLoading(true);
+              setErrorMessage(null);
+              
+              try {
+                // 调用API，传入status=2
+                const response = await fetch('/api/task/getMyAccepedTaskList?status=2', {
+                  method: 'GET',
+                  credentials: 'include'
+                });
+                
+                const responseData: GetMyPendingTasksResponse = await response.json();
+                
+                if (responseData.code === 0) {
+                  setTasks(responseData.data.list);
+                } else {
+                  setErrorMessage(responseData.message || '获取任务失败');
+                  setModalMessage('获取任务失败: ' + (responseData.message || '未知错误'));
+                  setShowModal(true);
+                  setTasks([]);
+                }
+              } catch (error) {
+                console.error('获取任务失败:', error);
+                setErrorMessage('网络异常，请稍后重试');
+                setModalMessage('网络异常，请稍后重试');
+                setShowModal(true);
+                setTasks([]);
+              } finally {
+                setIsLoading(false);
+              }
+            };
+            
+            fetchTasks();
+          }}
+        />
+      )}
+
+      {/* 排序按钮 */}
+      {!isLoading && !errorMessage && tasks.length > 0 && (
+        <div className="mb-4 flex justify-end">
+          <TimeOrder
+            sortField={sortField}
+            currentOrder={sortOrder}
+            onSortChange={handleSortChange}
+            buttonText="按提交时间排序"
+          />
+        </div>
+      )}
+
+      {/* 任务列表 */}
+      {!isLoading && !errorMessage && tasks.length > 0 && tasks.map((task) => (
         <div key={task.id || 'unknown'} className="rounded-lg p-4 mb-4 shadow-sm transition-all hover:shadow-md bg-white">
           <div className="flex justify-between items-start">
             <h3 className="text-sm text-black inline-block flex items-center">
