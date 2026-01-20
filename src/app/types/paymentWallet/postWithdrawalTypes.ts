@@ -1,9 +1,9 @@
 // 提现请求参数接口
 export interface PostWithdrawalRequest {
   amount: number;
-  alipay_account: string;
-  alipay_name: string;
-  payment_password: string;
+  withdraw_account: string;
+  withdraw_method: string;
+  pswd: string;
 }
 
 // 提现响应数据接口

@@ -1,46 +1,16 @@
 'use client';
-import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Card } from 'antd';
-
-interface TransactionRecord {
-  orderNo: string;
-  transactionType: string;
-  typeDescription: string;
-  amount: number;
-  beforeBalance: number;
-  afterBalance: number;
-  status: string;
-  statusDescription: string;
-  description: string;
-  channel: string;
-  createTime: string;
-  updateTime: string;
-}
-
-interface TransactionResponse {
-  code: number;
-  message: string;
-  data: {
-    list: TransactionRecord[];
-    total: number;
-    page: number;
-    size: number;
-    pages: number;
-  };
-  success: boolean;
-  timestamp: number;
-}
+import { Button } from 'antd';
+import { WithdrawalRecord, GetWithdrawalListResponse } from '@/app/types/paymentWallet/getWithdrawalListTypes';
 
 const TransactionListPage = () => {
   const router = useRouter();
-  const [transactions, setTransactions] = useState<TransactionRecord[]>([]);
+  const [transactions, setTransactions] = useState<WithdrawalRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('all');
 
-  // 从createTime中提取日期和时间
+  // 从created_at中提取日期和时间
   const extractDateTime = (createTime: string) => {
     const date = new Date(createTime);
     return {
@@ -78,66 +48,59 @@ const TransactionListPage = () => {
   };
 
   // 处理查看交易详情
-  const handleViewTransaction = (orderNo: string) => {
-    router.push(`/commenter/balance/transaction-details/${orderNo}` as any);
+  const handleViewTransaction = (transaction: WithdrawalRecord) => {
+    // 将交易记录转换为URL编码的JSON字符串，作为查询参数传递
+    const transactionParams = encodeURIComponent(JSON.stringify(transaction));
+    router.push(`/commenter/balance/transaction-details/${transaction.id}?data=${transactionParams}` as any);
   };
 
-
-  // 获取交易记录数据
+  // 获取提现记录数据
   useEffect(() => {
-    const fetchTransactionRecords = async () => {
+    const fetchWithdrawalRecords = async () => {
       try {
         setLoading(true);
         setError(null);
         
-        // 调用后端API获取交易记录
-        const response = await fetch(
-          '/api/walletmanagement/transactionrecord',
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              page: 1,
-              size: 50, // 请求更多数据以便筛选
-              sort: 'createTime',
-              order: 'desc'
-            })
-          }
-        );
+        // 调用后端API获取提现记录
+        const response = await fetch('/api/paymentWallet/getWithdrawalList', {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         
-        const data: TransactionResponse = await response.json();
+        const data: GetWithdrawalListResponse = await response.json();
         
-        if (!data.success) {
-          throw new Error(data.message || '获取交易记录失败');
+        if (!data.success || !data.data) {
+          throw new Error(data.message || '获取提现记录失败');
         }
         
-        // 按创建时间倒序排序
         // 计算一年前的日期
         const oneYearAgo = new Date();
         oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
         
+        // 按创建时间倒序排序，并只保留一年以内的记录
         const sortedTransactions = data.data.list
           // 只保留最近一年的记录
-          .filter(transaction => new Date(transaction.createTime) >= oneYearAgo)
+          .filter(transaction => new Date(transaction.created_at) >= oneYearAgo)
           // 按创建时间倒序排序
-          .sort((a, b) => new Date(b.createTime).getTime() - new Date(a.createTime).getTime())
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         
         setTransactions(sortedTransactions);
       } catch (err) {
-        setError(err instanceof Error ? err.message : '获取交易记录失败');
-        console.error('获取交易记录失败:', err);
+        setError(err instanceof Error ? err.message : '获取提现记录失败');
+        console.error('获取提现记录失败:', err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchTransactionRecords();
+    fetchWithdrawalRecords();
   }, []);
 
   // 返回上一页
@@ -151,25 +114,10 @@ const TransactionListPage = () => {
       {/* 交易记录 */}
       <div className="mt-3 bg-white">
         <div className="px-4 py-3 border-b border-gray-100">
-          <div className="grid w-full grid-cols-3 border-b border-gray-100">
-            <button 
-              className={`py-2 px-4 text-sm ${activeTab === 'all' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}
-              onClick={() => setActiveTab('all')}
-            >
+          <div className="grid w-full border-b border-gray-100">
+            <div className="py-2 px-4 text-sm">
               全部明细
-            </button>
-            <button 
-              className={`py-2 px-4 text-sm ${activeTab === 'recharge' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}
-              onClick={() => setActiveTab('recharge')}
-            >
-              收入明细
-            </button>
-            <button 
-              className={`py-2 px-4 text-sm ${activeTab === 'withdraw' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}
-              onClick={() => setActiveTab('withdraw')}
-            >
-              支出明细
-            </button>
+            </div>
           </div>
         </div>
 
@@ -221,46 +169,24 @@ const TransactionListPage = () => {
               <p className="text-gray-500 text-sm mb-4">您还没有任何交易记录</p>
             </div>
           ) : (
-            // 根据当前tab过滤交易记录 - 显示最多20条最新记录
+            // 显示提现记录
             <div>
               {/* 显示交易记录总数信息 */}
               <div className="px-4 py-2 border-b border-gray-100 bg-gray-50">
                 <div className="text-xs text-red-500">
-                  共显示最近一年的 {transactions.filter(t => {
-                    const isIncome = t.amount > 0;
-                    if (activeTab === 'recharge') return isIncome;
-                    if (activeTab === 'withdraw') return !isIncome && t.amount < 0;
-                    return true;
-                  }).length} 条记录
+                  共显示最近一年的 {transactions.length} 条提现记录
                 </div>
               </div>
               
               {transactions
-                .filter(transaction => {
-                  // 判断是否为收入记录（金额大于0）
-                  const isIncome = transaction.amount > 0;
-                  
-                  // 根据当前activeTab进行过滤
-                  if (activeTab === 'recharge') {
-                    // 收入明细：只显示金额大于0的记录
-                    return isIncome;
-                  } else if (activeTab === 'withdraw') {
-                    // 支出明细：只显示金额小于0的记录
-                    return !isIncome && transaction.amount < 0;
-                  }
-                  // 全部明细：显示所有记录
-                  return true;
-                })
-                // 移除slice(0, 10)限制，因为我们在API请求后已经限制了最多20条最新记录
                 .map((transaction) => {
                   const iconInfo = getTransactionIcon();
-                  const isIncome = transaction.amount > 0;
-                  const { date, time } = extractDateTime(transaction.createTime);
+                  const { date, time } = extractDateTime(transaction.created_at);
                   
                   return (
                     <div 
-                      key={transaction.orderNo}
-                      onClick={() => handleViewTransaction(transaction.orderNo)}
+                      key={transaction.id}
+                      onClick={() => handleViewTransaction(transaction)}
                       className="px-4 py-3 border-b border-gray-50 hover:bg-blue-50 flex items-center transition-colors duration-200"
                     >
                       <div className={`h-8 w-8 rounded-full flex items-center justify-center ${iconInfo.bgColor} mr-3 text-lg font-bold`}>
@@ -269,9 +195,9 @@ const TransactionListPage = () => {
                           
                       <div className="flex-1">
                         <div className="flex justify-between items-start mb-1">
-                          <h3 className="font-medium text-gray-900 truncate max-w-[60%]">{transaction.description || transaction.typeDescription}</h3>
-                          <span className={`font-medium ${isIncome ? 'text-green-600' : 'text-red-600'}`}>
-                            {isIncome ? '+' : ''}{transaction.amount.toFixed(2)}
+                          <h3 className="font-medium text-gray-900 truncate max-w-[60%]">提现：{transaction.status_text}</h3>
+                          <span className="font-medium text-red-600">
+                            -{transaction.amount}
                           </span>
                         </div>
                         <div className="flex justify-between items-center">

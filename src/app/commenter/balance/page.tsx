@@ -132,7 +132,7 @@ const BalancePage = () => {
 
   // 处理查看资金流水
   const handleViewAllTransactions = () => {
-    router.push('/publisher/balance/transactionList' as any);
+    router.push('/commenter/balance/transaction-list' as any);
   };
 
   return (
@@ -161,7 +161,7 @@ const BalancePage = () => {
                 onClick={handleViewAllTransactions}
                 className="bg-blue-700 text-white flex-1 border-none rounded-full"
               >
-                全部明细
+                提现记录
               </Button>
             </div>
           </div>

@@ -16,11 +16,11 @@ const PaymentSettingsPage: React.FC = () => {
       title: '设置支付密码',
       hasArrow: true,
     },
-    {
+    /*{
       id: 'change-payment-password',
       title: '修改支付密码',
       hasArrow: true,
-    }
+    }*/
   ];
 
   return (

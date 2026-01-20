@@ -75,14 +75,14 @@ export default function commenterProfilePage() {
       color: 'bg-yellow-100',
       path: '/commenter/withdrawal/list'
     },
-    {
+    /*{
       id: 'order-management',
       title: '订单管理',
       icon: <OrderedListOutlined className="text-xl" />,
       color: 'bg-green-100',
       path: '/commenter/order-management'
-    },
-    {
+    },*/
+   /* {
       id: 'data-stats',
       title: '收益统计',
       icon: <BarChartOutlined className="text-xl" />,
@@ -95,7 +95,7 @@ export default function commenterProfilePage() {
       icon: <BarChartOutlined className="text-xl" />,
       color: 'bg-blue-100',
       path: '/commenter/bank-cards'
-    },
+    },*/
     { 
       id: 'paymentsettings',
       title: '支付设置',      

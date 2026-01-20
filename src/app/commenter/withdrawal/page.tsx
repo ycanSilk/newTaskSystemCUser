@@ -2,8 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { InfoCircleOutlined } from '@ant-design/icons';
-// 导入userStore
-import { useUserStore } from '@/store/userStore';
+
 // 导入提现API类型定义
 import { PostWithdrawalRequest, PostWithdrawalResponse } from '@/app/types/paymentWallet/postWithdrawalTypes';
 
@@ -20,14 +19,36 @@ const WithdrawalPage = () => {
   const [alipayAccount, setAlipayAccount] = useState('');
   const [alipayName, setAlipayName] = useState('');
   
-  // 从userStore获取用户信息和钱包余额
-  const { currentUser, fetchUser } = useUserStore();
-  const availableBalance = currentUser?.balance || 0;
+  // 可用余额状态
+  const [availableBalance, setAvailableBalance] = useState(0);
   
-  // 页面加载时获取用户信息
+  // 获取可用余额
+  const fetchAvailableBalance = async () => {
+    try {
+      const response = await fetch('/api/paymentWallet/getWalletBalance', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      const result = await response.json();
+      console.log('获取可用余额响应:', result);
+      if (response.ok) {
+        
+        if (result.success && result.data) {
+          setAvailableBalance(parseFloat(result.data.wallet.balance || '0'));
+        }
+      }
+    } catch (error) {
+      console.error('获取可用余额失败:', error);
+    }
+  };
+  
+  // 页面加载时获取可用余额
   useEffect(() => {
-    fetchUser();
-  }, [fetchUser]);
+    fetchAvailableBalance();
+  }, []);
 
   // 验证提现金额
   const validateAmount = (value: string): { isValid: boolean; message: string } => {
@@ -38,25 +59,31 @@ const WithdrawalPage = () => {
       return { isValid: false, message: '请输入有效的提现金额' };
     }
 
-    // 检查最低金额
-    if (numAmount < 100) {
-      return { isValid: false, message: '最低提现金额为100元' };
-    }
-
-    // 检查最高金额
-    if (numAmount > 1000) {
-      return { isValid: false, message: '最高提现金额为1000元' };
-    }
-
-    // 检查是否为100的整数倍
-    if (numAmount % 100 !== 0) {
-      return { isValid: false, message: '提现金额必须为100的整数倍' };
+    // 检查是否为整数
+    if (numAmount % 1 !== 0) {
+      return { isValid: false, message: '提现金额必须是整数' };
     }
 
     // 检查余额是否充足
     if (numAmount > availableBalance) {
+      console.log('可用余额:', availableBalance);
       return { isValid: false, message: '提现金额不能超过可用余额' };
     }
+
+    // // 检查最低金额 - 已取消限制
+    // if (numAmount < 1) {
+    //   return { isValid: false, message: '最低提现金额为100元' };
+    // }
+
+    // // 检查最高金额 - 已取消限制
+    // if (numAmount > 1000) {
+    //   return { isValid: false, message: '最高提现金额为1000元' };
+    // }
+
+    // // 检查是否为100的整数倍 - 已取消限制
+    // if (numAmount % 100 !== 0) {
+    //   return { isValid: false, message: '提现金额必须为100的整数倍' };
+    // }
 
     return { isValid: true, message: '' };
   };
@@ -115,9 +142,9 @@ const WithdrawalPage = () => {
       // 构建提现请求参数
       const withdrawalRequest: PostWithdrawalRequest = {
         amount: numAmount,
-        alipay_account: alipayAccount,
-        alipay_name: alipayName,
-        payment_password: paymentPassword
+        withdraw_method: "alipay",
+        withdraw_account: alipayAccount,
+        pswd: paymentPassword
       };
       
       // 调用提现API
@@ -137,8 +164,8 @@ const WithdrawalPage = () => {
         // 提现成功
         setSuccess('提现申请提交成功');
         setShowPasswordModal(false);
-        // 重新获取用户信息，更新余额
-        await fetchUser();
+        // 重新获取可用余额
+        await fetchAvailableBalance();
         // 清空表单
         setAmount('');
         setAlipayAccount('');
@@ -172,7 +199,7 @@ const WithdrawalPage = () => {
         <div className="">
             <div className='p-4 bg-green-500 flex flex-col items-center justify-center h-[120px] rounded-md mb-4'> 
                 <div className=" text-white">余额: </div>
-                <div className=" text-white">{availableBalance.toFixed(2)}</div>
+                <div className=" text-white">{availableBalance}</div>
             </div>
             <div className="text-lg font-medium mb-2">提现金额:</div>         
             <div className="relative mb-4">
@@ -184,19 +211,19 @@ const WithdrawalPage = () => {
                   className="pl-8  text-xl  border rounded w-full"
                   disabled={loading || !!success}
                   />
-                  {amount && (!/^\d+$/.test(amount) || parseInt(amount) % 100 !== 0) && (
-                    <p className="text-red-500 text-sm mt-1">提现金额必须是100的整数倍</p>
+                  {amount && (!/^\d+$/.test(amount) || parseInt(amount) % 1 !== 0) && (
+                    <p className="text-red-500 text-sm mt-1">提现金额必须是整数</p>
                   )}
-                  <p className="text-sm text-red-500 mt-1">*提现金额必须是整数且是100的倍数</p>
+                  <p className="text-sm text-red-500 mt-1">*提现金额必须是整数</p>
             </div>
             
 
             <div className="text-sm  mb-4">
                 <p>提现说明：</p>
                 <ul className="list-disc list-inside pl-2 mt-1 space-y-1">
-                <li>最低提现金额：100元</li>
-                <li>最高提现金额：1000元</li>
-                <li>提现金额必须为100的整数倍</li>
+                {/* <li>最低提现金额：100元 - 已取消限制</li>
+                <li>最高提现金额：1000元 - 已取消限制</li>
+                <li>提现金额必须为100的整数倍 - 已取消限制</li> */}
                 <li>提现申请提交后将在1-3个工作日内到账</li>
                 </ul>
             </div>

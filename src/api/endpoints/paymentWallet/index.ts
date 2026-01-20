@@ -13,3 +13,7 @@ export const GET_WALLET_BALANCE_ENDPOINT = '/c/v1/wallet.php';  // 获取钱包�
 
 //提现的后端API端点,请求方法：POST
 export const WITHDRAWAL_WALLET_ENDPOINT = '/c/v1/withdraw.php';  // 提现
+
+
+//提现记录的后端API端点,请求方法：GET
+export const GET_WITHDRAWAL_RECORD_ENDPOINT = '/c/v1/withdraw-list.php';  // 提现记录

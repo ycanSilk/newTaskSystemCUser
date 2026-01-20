@@ -198,19 +198,18 @@ export default function TopNavigationBar({ user }: TopNavigationBarProps) {
   return (
     <div className="fixed top-0 left-0 right-0 z-50 bg-blue-500 text-white px-4 py-3 flex items-center justify-between shadow-md">
       <div className="flex items-center space-x-2">
-        {shouldShowBackButton() && (
+       {/* {shouldShowBackButton() && (
           <button 
             onClick={handleBack} 
             className="text-white p-1 hover:bg-blue-600 rounded-full"
             aria-label="返回"
           >
             <span className="sr-only">返回</span>
-            {/* 简单的返回箭头 */}
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-        )}
+        )}*/}
         <div className="flex items-center space-x-1">
           {isClient && <span className="text-xl font-medium">{pageTitle}</span>}
         </div>
