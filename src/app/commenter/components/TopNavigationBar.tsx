@@ -6,6 +6,8 @@ import { UserOutlined } from '@ant-design/icons';
 import { CustomerServiceButton } from '../../../components/button/CustomerServiceButton';
 import SearchBar from '../../../components/button/SearchBar';
 import { BellOutlined } from '@ant-design/icons';
+// 导入useUser钩子
+import { useUser } from '@/hooks/useUser';
 
 // 导入路由配置
 import { 
@@ -26,6 +28,9 @@ export default function TopNavigationBar({ user }: TopNavigationBarProps) {
   const [isClient, setIsClient] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  // 使用useUser钩子获取用户信息，包括unread_count
+  const { user: userWithUnreadCount } = useUser();
   
   // 点击外部关闭下拉菜单 - 确保只有一个事件监听器
   useEffect(() => {
@@ -223,11 +228,20 @@ export default function TopNavigationBar({ user }: TopNavigationBarProps) {
         />
       
         <div className="mr-2 relative">
-          <BellOutlined className="text-3xl text-white rounded-full p-1" />
-          {/* 通知数量提示 */}
-          <div className="absolute top-0 left-5 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
-            3
-          </div>
+          {/* 通知图标按钮，点击跳转到通知页面 */}
+          <button
+            onClick={() => router.push('/commenter/notification')}
+            className="cursor-pointer hover:bg-blue-600 rounded-full p-1 transition-colors"
+            aria-label="通知"
+          >
+            <BellOutlined className="text-3xl text-white" />
+          </button>
+          {/* 通知数量提示，只有当unread_count大于0时显示 */}
+          {userWithUnreadCount && userWithUnreadCount.unread_count > 0 && (
+            <div className="absolute top-0 left-5 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
+              {userWithUnreadCount.unread_count}
+            </div>
+          )}
         </div>
 
         {/* 用户头像和下拉菜单 */}

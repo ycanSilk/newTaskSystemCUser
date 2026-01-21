@@ -11,6 +11,7 @@ export interface CheckTokenResponseData {
   is_agent: number;     // 是否为代理商（0或1）
   token_expired_at: string; // 令牌过期时间
   expires_in: number;   // 过期时间（秒）
+  unread_count: number; // 未读通知数量
 }
 
 // API响应数据接口

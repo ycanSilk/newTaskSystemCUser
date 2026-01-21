@@ -132,7 +132,7 @@ const BalancePage = () => {
 
   // 处理查看资金流水
   const handleViewAllTransactions = () => {
-    router.push('/commenter/balance/transaction-list' as any);
+    router.push('/commenter/withdrawal/withdrawalList' as any);
   };
 
   return (

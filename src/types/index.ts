@@ -28,6 +28,7 @@ export interface User {
   lastLoginAt?: string;
   invitationCode?: string; // 邀请码
   permissions?: string[];  // 管理员权限
+  unread_count: number;  // 未读消息数量
   stats?: {  // 统计数据
     totalTasks?: number;
     activeTasks?: number;

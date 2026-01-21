@@ -6,6 +6,8 @@ import { useState, useEffect, useRef } from 'react';
 import { User, UserRole } from '@/types';
 // 导入CheckTokenResponse类型
 import { CheckTokenResponse } from '@/app/types/auth/checkTokenTypes';
+// 导入GetNotificationsListResponse类型
+import { GetNotificationsListResponse } from '@/app/types/notifications/getNotificationsListTypes';
 // 导入userStore
 import { useUserStore } from '@/store/userStore';
 // 导入路由解密工具函数
@@ -67,8 +69,34 @@ const fetchUserInfoFromApi = async (): Promise<User | null> => {
         role: 'commenter' as UserRole, // 默认角色
         balance: 0, // 默认余额
         status: 'active', // 默认状态
-        createdAt: new Date().toISOString() // 默认创建时间
+        createdAt: new Date().toISOString(), // 默认创建时间
+        unread_count: 0 // 默认未读消息数量
       };
+      
+      try {
+        // 调用通知列表API获取未读消息数量
+        const notificationsResponse = await fetch('/api/notifications/getNotificationsList', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          cache: 'no-store',
+        });
+        
+        if (notificationsResponse.ok) {
+          const notificationsData: GetNotificationsListResponse = await notificationsResponse.json();
+          
+          if (notificationsData.success && notificationsData.data) {
+            // 更新用户信息中的未读消息数量
+            userInfo.unread_count = notificationsData.data.unread_count;
+            console.log('未读消息数量:', notificationsData.data.unread_count);
+          }
+        }
+      } catch (error) {
+        console.error('获取未读消息数量失败:', error);
+        // 即使获取未读消息数量失败，也不影响用户登录
+      }
+      
       return userInfo;
     }
     

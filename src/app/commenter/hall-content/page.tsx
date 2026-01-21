@@ -393,7 +393,8 @@ export default function CommenterHallContentPage() {
               <div key={task.id} className="bg-white rounded-lg p-4 mb-4 shadow-sm">
                 <div className="flex justify-between items-start mb-3">
                   <div>
-                    <h3 className="font-bold text-gray-800">任务标题：{task.title}</h3>
+                    <h3 className="font-bold">任务标题：{task.title}</h3>
+                    <div>订单号：{task.id}</div>
                     <div className="flex gap-2 mt-1">
                       {task.status === 1 && (
                         <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded inline-block">

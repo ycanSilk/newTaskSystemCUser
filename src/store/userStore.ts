@@ -114,7 +114,8 @@ export const useUserStore = create<UserState>((set, get) => ({
           status: result.data.status === 1 ? 'active' : 'inactive',
           createdAt: result.data.created_at || new Date().toISOString(),
           updatedAt: result.data.updated_at,
-          invitationCode: result.data.invite_code
+          invitationCode: result.data.invite_code,
+          unread_count: 0 // 默认未读消息数量
         };
         console.log('转换后的用户数据:', userData);
         // 设置用户信息到store

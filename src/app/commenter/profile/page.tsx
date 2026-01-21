@@ -73,7 +73,7 @@ export default function commenterProfilePage() {
       title: '提现明细',
       icon: <WalletOutlined className="text-xl" />,
       color: 'bg-yellow-100',
-      path: '/commenter/withdrawal/list'
+      path: '/commenter/withdrawal/withdrawalList'
     },
     /*{
       id: 'order-management',
