@@ -4,75 +4,8 @@ import { useState, useEffect } from 'react';
 import { notFound, redirect } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 
-// 定义租赁信息数据类型，符合后端API返回格式
-export interface LeaseInfo {
-  id: string;
-  userId: string;
-  accountType: string;
-  accountLevel: string;
-  platform: string;
-  description: string;
-  pricePerDay: number;
-  depositAmount: number;
-  minLeaseDays: number;
-  maxLeaseDays: number;
-  status: string;
-  totalOrders: number;
-  completedOrders: number;
-  successRate: number;
-  createTime: string;
-  image?: string;
-  images?: string[];
-}
-
-// 定义API响应数据类型
-export interface ApiResponse<T> {
-  code: number;
-  message: string;
-  data: T;
-  success: boolean;
-  timestamp: number;
-}
-
-// 调用后端API获取租赁信息详情
-const fetchLeaseInfoDetail = async (leaseInfoId: string): Promise<LeaseInfo> => {
-  try {
-    // 调用本地API路由，将leaseInfoId通过headers传递给后端
-    console.log('正在发送请求，leaseInfoId通过headers传递:', leaseInfoId);
-    const response = await fetch(`/api/rental/getleaseinfodetail?leaseInfoId=${leaseInfoId}`,{
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      }
-    );
-    console.log('这是获取租赁信息详情的日志输出:', response.status);
-    console.log('请求url:', `/api/rental/getleaseinfodetail?leaseInfoId=${leaseInfoId}`);
-    console.log(await response.clone().json());
-    // 首先检查响应是否成功
-    if (!response.ok) {
-      // 尝试解析错误响应内容
-      let errorData;
-      try {
-        errorData = await response.json();
-      } catch (e) {
-        // 如果无法解析JSON，则使用HTTP状态码作为错误信息
-        throw new Error(`API请求失败: HTTP ${response.status}`);
-      }
-      // 如果错误响应包含message，则使用它
-      throw new Error(`API请求失败: ${errorData.message || `HTTP ${response.status}`}`);
-    }
-
-    // 成功时解析并返回数据
-    const result: ApiResponse<LeaseInfo> = await response.json();
-    return result.data;
-  } catch (error) {
-    console.error('获取租赁信息详情失败:', error);
-    // 重新抛出错误，保持原有的错误处理流程
-    throw error;
-  }
-}
-
+// 导入新的类型定义
+import { GetOffersRentalInfoDetailResponse, RentalInfoDetail } from '../../../../types/rental/rentOut/getOffersRentalInfoDetailTypes';
 
 // 客户端组件
 const AccountDetailPage = ({
@@ -83,9 +16,9 @@ const AccountDetailPage = ({
   };
 }) => {
   const { id } = params;
-  const leaseInfoId = id || '';
+  const offerId = id || '';
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [leaseInfo, setLeaseInfo] = useState<LeaseInfo | null>(null);
+  const [rentalInfo, setRentalInfo] = useState<RentalInfoDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -95,151 +28,18 @@ const AccountDetailPage = ({
   const [apiError, setApiError] = useState('');
   const [leaseDays, setLeaseDays] = useState<number>(0);
   
-  // 当leaseInfo加载完成后，可以根据需要设置默认租赁天数，但允许用户修改为0
+  // 当rentalInfo加载完成后，可以根据需要设置默认租赁天数，但允许用户修改为0
   useEffect(() => {
-    if (leaseInfo && leaseInfo.minLeaseDays) {
+    if (rentalInfo && rentalInfo.min_days) {
       // 保持默认值为最小租赁天数，但用户可以修改为0
-      setLeaseDays(leaseInfo.minLeaseDays);
+      setLeaseDays(rentalInfo.min_days);
     }
-  }, [leaseInfo?.minLeaseDays]);
-  
-  // 创建租赁订单
-  const createLeaseOrder = async (leaseInfoId: string, leaseDays: number) => {
-    try {
-      const response = await fetch('/api/rental/creatleaseorder', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          leaseInfoId,
-          leaseDays
-        })
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || '创建订单失败');
-      }
-      
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('创建租赁订单失败:', error);
-      throw error;
-    }
-  };
-
-  // 支付租赁订单
-  const payLeaseOrder = async (orderId: string): Promise<boolean> => {
-    try {
-      const response = await fetch('/api/rental/paymentleaseorder', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ orderId })
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || '支付失败');
-      }
-      
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('支付租赁订单失败:', error);
-      throw error;
-    }
-  };
-
-  // 处理立即租赁
-  const handleRentNow = async () => {
-    if (!leaseInfo || apiLoading) return;
-    
-    try {
-      setApiLoading(true);
-      setApiError('');
-      
-      console.log('开始创建租赁订单，租期:', leaseDays);
-      // 创建租赁订单，使用用户选择的租期
-      const result = await createLeaseOrder(leaseInfo.id, leaseDays);
-      
-      console.log('创建订单API响应:', result);
-      
-      // 根据API返回的数据结构，订单ID是orderNo字段
-      let orderNo = null;
-      if (result && result.success && result.data && result.data.orderNo) {
-        orderNo = result.data.orderNo;
-        console.log('获取到订单号orderNo:', orderNo);
-        // 保存订单号
-        setOrderId(orderNo);
-        // 显示支付密码模态框
-        console.log('设置显示支付模态框为true');
-        setShowPaymentModal(true);
-      } else {
-        // 更宽容地处理可能的不同响应格式
-        if (result && result.data && result.data.id) {
-          // 如果找不到orderNo但有id，使用id作为后备
-          orderNo = result.data.id;
-          console.log('使用id作为后备订单ID:', orderNo);
-          setOrderId(orderNo);
-          setShowPaymentModal(true);
-        } else {
-          throw new Error(result?.message || '创建订单失败，未找到订单号');
-        }
-      }
-    } catch (error) {
-      console.error('创建订单失败:', error);
-      setApiError(error instanceof Error ? error.message : '创建订单失败，请稍后重试');
-    } finally {
-      setApiLoading(false);
-    }
-  };
-
-  // 处理取消支付
-  const handleCancelPayment = () => {
-    setShowPaymentModal(false);
-    setPaymentPassword('');
-    setOrderId('');
-    // 取消后跳转到租赁订单页面
-    window.location.href = '/accountrental/my-account-rental/myrentedorder';
-  };
-
-  // 处理确认支付
-  const handleConfirmPayment = async () => {
-    if (!orderId || paymentPassword.length !== 6 || apiLoading) return;
-    
-    try {
-      setApiLoading(true);
-      setApiError('');
-      
-      // 支付订单
-      const result: boolean = await payLeaseOrder(orderId);
-      
-      console.log('支付结果:', result);
-      // 检查是否成功
-      if (result) {
-        // 支付成功，关闭模态框并显示成功提示
-        setShowPaymentModal(false);
-        alert('支付成功！正在跳转到订单页面...');
-        // 跳转到租赁订单页面
-        window.location.href = '/app/accountrental/my-account-rental/rentalorder';
-      } else {
-        throw new Error('支付失败');
-      }
-    } catch (error) {
-      setApiError(error instanceof Error ? error.message : '支付失败，请稍后重试');
-    } finally {
-      setApiLoading(false);
-    }
-  };
+  }, [rentalInfo?.min_days]);
   
   // 组件挂载时获取数据
   useEffect(() => {
-    const loadLeaseInfoDetail = async () => {
-      if (!leaseInfoId) {
+    const loadRentalInfoDetail = async () => {
+      if (!offerId) {
         setError('租赁信息ID无效');
         setLoading(false);
         return;
@@ -247,20 +47,38 @@ const AccountDetailPage = ({
       
       try {
         setLoading(true);
-        const data = await fetchLeaseInfoDetail(leaseInfoId);
-        setLeaseInfo(data);
-        setError(null);
+        console.log('offerId:', offerId);
+        // 调用新的API端点，使用offer_id参数
+        const response = await fetch(`/api/rental/rentOut/getOffersRentalInfoDetail?offer_id=${offerId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`API请求失败: HTTP ${response.status}`);
+        }
+        
+        const result: GetOffersRentalInfoDetailResponse = await response.json();
+        
+        if (result.code === 0) {
+          setRentalInfo(result.data);
+          setError(null);
+        } else {
+          throw new Error(result.message || '获取租赁信息失败');
+        }
       } catch (error) {
         console.error('获取租赁信息详情失败:', error);
         setError(error instanceof Error ? error.message : '获取租赁信息失败');
-        setLeaseInfo(null);
+        setRentalInfo(null);
       } finally {
         setLoading(false);
       }
     };
     
-    loadLeaseInfoDetail();
-  }, [leaseInfoId]);
+    loadRentalInfoDetail();
+  }, [offerId]);
   
   // 统一的页面布局组件 - 使用更简单的结构避免Hydration mismatch
   const PageContainer = ({ children }: { children: React.ReactNode }) => (
@@ -351,7 +169,7 @@ const AccountDetailPage = ({
   );
 
   // 渲染相应的状态
-  if (!leaseInfoId) {
+  if (!offerId) {
     return <InvalidIdState />;
   }
 
@@ -359,35 +177,19 @@ const AccountDetailPage = ({
     return <LoadingState />;
   }
 
-  if (!leaseInfo || error) {
+  if (!rentalInfo || error) {
     return <ErrorState message={error || '未找到租赁信息'} />;
   }
 
-    // 格式化发布时间
-    const formatPublishTime = (timeString: string): string => {
-      const date = new Date(timeString);
-      return date.toLocaleDateString('zh-CN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    };
-
     // 根据订单状态返回对应的样式类名
-    const getOrderStatusClass = (leaseInfoStatus: string): string => {
-      switch (leaseInfoStatus) {
-        case 'ACTIVE':
-          return 'bg-yellow-100 text-yellow-800';
-        case 'CONFIRMED':
+    const getOrderStatusClass = (statusText: string): string => {
+      switch (statusText) {
+        case '上架中':
           return 'bg-green-100 text-green-800';
-        case 'IN_PROGRESS':
-          return 'bg-blue-100 text-blue-800';
-        case 'COMPLETED':
-          return 'bg-purple-100 text-purple-800';
-        case 'CANCELLED':
+        case '已下架':
           return 'bg-gray-100 text-gray-800';
+        case '已出租':
+          return 'bg-yellow-100 text-yellow-800';
         default:
           return 'bg-gray-100 text-gray-800';
       }
@@ -412,34 +214,34 @@ const AccountDetailPage = ({
                   {/* 租赁描述 */}
                   <div className="mb-6">
                     <h2 className="text-lg font-medium text-gray-800 mb-2">账号描述</h2>
-                    <p className="text-gray-600 leading-relaxed">{leaseInfo.description}</p>
+                    <p className="text-gray-600 leading-relaxed">{rentalInfo.content_json.account_info}</p>
                   </div>
                   
                   {/* 租赁信息详情 */}
                   <div className="grid grid-cols-3 gap-4 mb-6 border-t border-gray-100 pt-4">
                     <div>
-                      <div className="text-sm ">平台</div>
-                      <div>{leaseInfo.platform}</div>
+                      <div className="text-sm ">发布者</div>
+                      <div>{rentalInfo.publisher_username}</div>
                     </div>
                     <div>
-                      <div className="text-sm">账号类型</div>
-                      <div>{leaseInfo.accountType}</div>
+                      <div className="text-sm">用户类型</div>
+                      <div>{rentalInfo.user_type_text}</div>
                     </div>
                     <div>
                       <div className="text-sm">租赁状态</div>
-                      <div className={`inline-block px-2 py-1 rounded-full text-sm font-medium ${getOrderStatusClass(leaseInfo.status)}`}>
-                        {leaseInfo.status}
+                      <div className={`inline-block px-2 py-1 rounded-full text-sm font-medium ${getOrderStatusClass(rentalInfo.status_text)}`}>
+                        {rentalInfo.status_text}
                       </div>
                     </div>
                   </div>
                 </div>
                 {/* 账号图片展示区域 */}
-                {leaseInfo && (
+                {rentalInfo && rentalInfo.content_json && (
                   <div className="bg-white px-3">
                     <h2 className="text-lg font-medium text-gray-800 mb-3">账号图片：</h2>
                     <div className="grid grid-cols-3 gap-4">
                       {/* 判断是否有图片，没有则显示默认图片 */}
-                      {(!leaseInfo.image && (!leaseInfo.images || leaseInfo.images.length === 0)) ? (
+                      {(!rentalInfo.content_json.images || rentalInfo.content_json.images.length === 0) ? (
                         <div 
                           className="cursor-pointer overflow-hidden rounded-lg border border-gray-200 hover:border-blue-400 transition-colors w-[100px] h-[100px]"
                           onClick={() => setSelectedImage('/images/default.png')}
@@ -451,15 +253,16 @@ const AccountDetailPage = ({
                           />
                         </div>
                       ) : (
-                        // 优先使用单张图片
-                        leaseInfo.image ? (
+                        // 多张图片展示
+                        rentalInfo.content_json.images.map((img, index) => (
                           <div 
+                            key={index} 
                             className="cursor-pointer overflow-hidden rounded-lg border border-gray-200 hover:border-blue-400 transition-colors w-[100px] h-[100px]"
-                            onClick={() => setSelectedImage(leaseInfo.image!)}
+                            onClick={() => setSelectedImage(img.trim())}
                           >
                             <img 
-                              src={leaseInfo.image} 
-                              alt="账号图片" 
+                              src={img.trim()} 
+                              alt={`账号图片 ${index + 1}`} 
                               className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" 
                               onError={(e) => {
                                 // 图片加载失败时显示默认图片
@@ -469,28 +272,7 @@ const AccountDetailPage = ({
                               }}
                             />
                           </div>
-                        ) : (
-                          // 多张图片展示
-                          leaseInfo.images?.map((img, index) => (
-                            <div 
-                              key={index} 
-                              className="cursor-pointer overflow-hidden rounded-lg border border-gray-200 hover:border-blue-400 transition-colors w-[100px] h-[100px]"
-                              onClick={() => setSelectedImage(img)}
-                            >
-                              <img 
-                                src={img} 
-                                alt={`账号图片 ${index + 1}`} 
-                                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" 
-                                onError={(e) => {
-                                  // 图片加载失败时显示默认图片
-                                  const target = e.target as HTMLImageElement;
-                                  target.src = '/images/default.png';
-                                  target.alt = '账号默认图片';
-                                }}
-                              />
-                            </div>
-                          ))
-                        )
+                        ))
                       )}
                     </div>
                   </div>
@@ -527,7 +309,13 @@ const AccountDetailPage = ({
                 {showPaymentModal && (
                   <div 
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" 
-                    onClick={handleCancelPayment}
+                    onClick={() => {
+                      setShowPaymentModal(false);
+                      setPaymentPassword('');
+                      setOrderId('');
+                      // 取消后跳转到租赁订单页面
+                      window.location.href = '/accountrental/my-account-rental/myrentedorder';
+                    }}
                   >
                     <div 
                       className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full" 
@@ -554,14 +342,24 @@ const AccountDetailPage = ({
                         <Button 
                           variant="ghost" 
                           className="flex-1" 
-                          onClick={handleCancelPayment}
+                          onClick={() => {
+                            setShowPaymentModal(false);
+                            setPaymentPassword('');
+                            setOrderId('');
+                            // 取消后跳转到租赁订单页面
+                            window.location.href = '/accountrental/my-account-rental/myrentedorder';
+                          }}
                           disabled={apiLoading}
                         >
                           取消
                         </Button>
                         <Button 
                           className="flex-1 bg-blue-500 hover:bg-blue-600 text-white" 
-                          onClick={handleConfirmPayment}
+                          onClick={() => {
+                            // 这里可以添加实际的支付逻辑
+                            setShowPaymentModal(false);
+                            alert('支付功能待实现');
+                          }}
                           disabled={apiLoading || paymentPassword.length !== 6}
                         >
                           {apiLoading ? '支付中...' : '确认支付'}
@@ -579,18 +377,18 @@ const AccountDetailPage = ({
                 {/* 价格信息 */}
                 <div className="mb-6">
                   <div className="flex items-end">
-                    <span className="text-3xl font-bold text-red-600">¥{leaseInfo.pricePerDay}/天</span>
+                    <span className="text-3xl font-bold text-red-600">¥{rentalInfo.price_per_day_yuan}/天</span>
                   </div>
                 </div>
                 {/* 租赁信息 */}
                 <div className="space-y-3 mb-6">
                   <div className="flex justify-between text-sm">
                     <span>最低租期</span>
-                    <span>{leaseInfo.minLeaseDays}天</span>
+                    <span>{rentalInfo.min_days}天</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>最高租期</span>
-                    <span>{leaseInfo.maxLeaseDays}天</span>
+                    <span>{rentalInfo.max_days}天</span>
                   </div>
                   <div className="mt-3">
                     <label className="block text-sm font-medium text-gray-700 mb-1">租赁天数</label>
@@ -606,21 +404,24 @@ const AccountDetailPage = ({
                           const numValue = parseInt(value);
                           // 允许输入0和正整数，只要它在有效范围内
                           if (!isNaN(numValue)) {
-                            setLeaseDays(Math.max(0, Math.min(leaseInfo.maxLeaseDays, numValue)));
+                            setLeaseDays(Math.max(0, Math.min(rentalInfo.max_days, numValue)));
                           }
                         }
                       }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       min="0"
                     />
-                    <p className="text-xs text-gray-500 mt-1">请输入0-{leaseInfo.maxLeaseDays}天</p>
+                    <p className="text-xs text-gray-500 mt-1">请输入0-{rentalInfo.max_days}天</p>
                   </div>
                 </div>
                 {/* 操作按钮 */}
                 <div className="space-y-3">
                   <Button 
                     className="w-full bg-blue-500 hover:bg-blue-600 text-white"
-                    onClick={handleRentNow}
+                    onClick={() => {
+                      // 这里可以添加实际的立即租赁逻辑
+                      alert('立即租赁功能待实现');
+                    }}
                     disabled={apiLoading}
                   >
                     {apiLoading ? '处理中...' : '立即租赁'}
@@ -640,10 +441,8 @@ const AccountDetailPage = ({
             </div>
           </div>
         </div>
-        
-      
-      </div>
+    </div>
     );
-};
+  }
 
 export default AccountDetailPage;

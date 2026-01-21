@@ -118,7 +118,8 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
         className={`image-upload-grid grid grid-cols-${columns} gap-4 justify-center items-center mb-4`}
         style={{ width: gridWidth }}
       >
-        {Array.from({ length: maxCount }).map((_, index) => (
+        {/* 只渲染当前已上传图片数量 + 1个上传区域，最多不超过maxCount */}
+        {Array.from({ length: Math.min(images.length + 1, maxCount) }).map((_, index) => (
           <div 
             key={index} 
             className={`image-upload-item relative border-2 border-dashed rounded-lg flex items-center justify-center transition-all duration-300 ${images[index] ? 'border-blue-500 bg-blue-50' : 'border-gray-500 hover:border-blue-500 hover:bg-blue-50'}`}

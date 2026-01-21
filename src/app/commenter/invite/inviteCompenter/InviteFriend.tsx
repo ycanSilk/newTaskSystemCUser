@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { CodeOutlined, ShareAltOutlined, BulbOutlined } from '@ant-design/icons';
 import { GetAgentInfoResponse } from '@/app/types/agent/getAgentInfoTypes';
 import { GetAgentInviteDataApiResponse } from '@/app/types/agent/getAgentInviteDataTypes';
+import { ApplyLevelLeaderApiResponse } from '@/app/types/agent/applyLevelLeaderTypes';
 
 interface InviteFriendProps {
   setError: (error: string | null) => void;
@@ -14,6 +15,9 @@ const InviteFriend: React.FC<InviteFriendProps> = ({ setError }) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [agentInfo, setAgentInfo] = useState<any>(null);
   const [inviteData, setInviteData] = useState<any>(null);
+  const [applying, setApplying] = useState<boolean>(false);
+  // 申请按钮状态
+  const [isApplying, setIsApplying] = useState<boolean>(false);
 
   // 组件加载时获取代理信息和邀请数据
   useEffect(() => {
@@ -75,6 +79,33 @@ const InviteFriend: React.FC<InviteFriendProps> = ({ setError }) => {
       }, 3000);
     } catch (err) {
       alert('复制失败，请手动复制');
+    }
+  };
+
+  // 申请成为团长
+  const applyLevelLeader = async () => {
+    try {
+      setApplying(true);
+      
+      const response = await fetch('/api/agent/applyLevelLeader', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const data: ApplyLevelLeaderApiResponse = await response.json();
+      
+      if (data.success) {
+        alert('申请成功！' + (data.message || ''));
+      } else {
+        alert('申请失败：' + data.message);
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? `申请失败：${err.message}` : '申请失败，请稍后重试';
+      alert(errorMessage);
+    } finally {
+      setApplying(false);
     }
   };
 
@@ -176,10 +207,11 @@ const InviteFriend: React.FC<InviteFriendProps> = ({ setError }) => {
         
         <div className="w-full mt-3">
           <button 
-              onClick={copyInviteLink}
-              className="bg-blue-500 text-white px-8 py-3 rounded-lg hover:bg-blue-600 transition-all duration-300 w-full transform hover:scale-[1.02] flex items-center justify-center font-medium"
+              onClick={applyLevelLeader}
+              disabled={applying}
+              className="bg-blue-500 text-white px-8 py-3 rounded-lg hover:bg-blue-600 transition-all duration-300 w-full transform hover:scale-[1.02] flex items-center justify-center font-medium disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              申请成为团长
+              {applying ? '申请中...' : '申请成为团长'}
           </button>
         </div>
       </div>

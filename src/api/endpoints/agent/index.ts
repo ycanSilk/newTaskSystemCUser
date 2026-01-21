@@ -9,3 +9,6 @@ export const GET_AGENT_INVITE_DATA_ENDPOINT = `/c/v1/agent/stats.php`;
 
 //我邀请的用户列表，下级列表
 export const GET_AGENT_INVITE_LIST_ENDPOINT = `/c/v1/agent/downlines.php`;
+
+//申请成为团长
+export const APPLY_LEVEL_LEADER_ENDPOINT = `/c/v1/agent/apply.php`;
