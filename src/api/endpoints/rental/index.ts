@@ -18,3 +18,6 @@ export const GET_OFFERS_RENTAL_INFO_DETAIL_ENDPOINT = `/rental/offers/detail.php
 /*
 求租部分
 */ 
+
+//创建求租信息
+export const CREATE_REQUEST_RENTAL_INFO_ENDPOINT = `/rental/demands/create.php`;

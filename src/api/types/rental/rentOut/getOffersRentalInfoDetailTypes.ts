@@ -3,7 +3,7 @@ interface ContentJson {
   images: string[];
   deblocking: string;
   account_info: string;
-  introduction: string;
+  publish_comment: string;
   phone_message: string;
   publish_video: string;
   requested_all: string;
