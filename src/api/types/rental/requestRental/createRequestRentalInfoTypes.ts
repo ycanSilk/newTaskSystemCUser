@@ -8,14 +8,16 @@ export interface CreateRequestRentalInfoParams {
   deadline: number; // 截止时间戳
   requirements_json: {
     account_requirements: string; // 账号要求
-    basic_information:string;       //支持修改账号基本信息
+    basic_information:number;       //支持修改账号基本信息
+    other_requirements:number;      //需要实名认证
     deblocking:number;              //需要人脸验证解封
-    requested_all:string;           //按承租方要求登录
+    requested_all:number;           //按承租方要求登录
     phone_message:number;           //手机号+短信验证登录
-    scan_code_login: string;        // 扫码登录
+    scan_code_login: number;        // 扫码登录
     qq_number:string;               //联系方式：手机号
     phone_number:string;            //qq号
     email:string;                   //邮箱
+
   };
 }
 

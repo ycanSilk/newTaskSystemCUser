@@ -9,6 +9,7 @@ export interface CreateRequestRentalInfoParams {
   requirements_json: {
     account_requirements: string; // 账号要求
     basic_information:number;       //支持修改账号基本信息
+    other_requirements:number;      //需要实名认证
     deblocking:number;              //需要人脸验证解封
     requested_all:number;           //按承租方要求登录
     phone_message:number;           //手机号+短信验证登录

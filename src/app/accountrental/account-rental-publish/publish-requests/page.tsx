@@ -14,15 +14,16 @@ const PublishForm = () => {
     days_needed: 1,
     deadline: 0,
     requirements_json: {
-      account_requirements: '',
-      basic_information: 0,
-      deblocking: 0,
-      requested_all: 0,
-      phone_message: 0,
-      scan_code_login: 0,
-      qq_number: '',
-      phone_number: '',
-      email: ''
+      account_requirements: '',   // 账号要求
+    basic_information:0,          //支持修改账号基本信息
+    other_requirements:0,          //需要实名认证
+    deblocking:0,                 //需要人脸验证解封
+    requested_all:0,           //按承租方要求登录
+    phone_message:0,           //手机号+短信验证登录
+    scan_code_login: 0,        // 扫码登录
+    qq_number:'',               //联系方式：手机号
+    phone_number:'',            //qq号
+    email:'',                   //邮箱
     }
   });
 
@@ -69,6 +70,15 @@ const PublishForm = () => {
       newErrors.qq = '请输入有效的QQ号码';
     }
     
+    // 至少填写一种联系方式
+    const hasPhone = formData.requirements_json.phone_number.trim() !== '';
+    const hasEmail = formData.requirements_json.email.trim() !== '';
+    const hasQQ = formData.requirements_json.qq_number.trim() !== '';
+    
+    if (!hasPhone && !hasEmail && !hasQQ) {
+      newErrors.contact = '请至少填写一种联系方式';
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -81,8 +91,10 @@ const PublishForm = () => {
     if (['title', 'budget_amount', 'days_needed', 'deadline'].includes(name)) {
       setFormData(prev => ({
         ...prev,
-        [name]: name === 'budget_amount' ? parseFloat(value) || 0 : 
-                name === 'days_needed' || name === 'deadline' ? parseInt(value) || 0 : value
+        [name]: 
+          name === 'budget_amount' ? (value === '' ? 0 : parseFloat(value) || 0) : 
+          name === 'days_needed' ? (value === '' ? 0 : parseInt(value) || 0) :
+          name === 'deadline' ? parseInt(value) || 0 : value
       }));
     }
     // 处理描述字段，映射到account_requirements
@@ -157,9 +169,10 @@ const PublishForm = () => {
     }
     
     try {
-      // 准备请求体
+      // 准备请求体，确保预算金额和天数转换为数字类型
       const requestBody: CreateRequestRentalInfoParams = {
         ...formData,
+        days_needed: formData.days_needed === 0 ? 1 : formData.days_needed, // 确保最小天数为1
         budget_amount: formData.budget_amount * 100 // 转换为分
       };
       
@@ -241,13 +254,13 @@ const PublishForm = () => {
           {/* 预算金额 */}
           <div className="mb-1">
             <label htmlFor="budget_amount" className="block text-sm font-medium text-gray-700 mb-1">
-              预算金额 (元) <span className="text-red-500">*</span>
+              预算金额 (元)/天 <span className="text-red-500">*</span>
             </label>
             <input
               type="number"
               id="budget_amount"
               name="budget_amount"
-              value={formData.budget_amount}
+              value={formData.budget_amount === 0 ? '' : formData.budget_amount}
               onChange={handleInputChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
               placeholder="请输入预算金额"
@@ -260,13 +273,13 @@ const PublishForm = () => {
           {/* 需要天数 */}
           <div className="mb-1">
             <label htmlFor="days_needed" className="block text-sm font-medium text-gray-700 mb-1">
-              需要天数 <span className="text-red-500">*</span>
+              需要租赁天数 <span className="text-red-500">*</span>
             </label>
             <input
               type="number"
               id="days_needed"
               name="days_needed"
-              value={formData.days_needed}
+              value={formData.days_needed === 0 ? '' : formData.days_needed}
               onChange={handleInputChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
               placeholder="请输入需要天数"
@@ -281,12 +294,16 @@ const PublishForm = () => {
               截止时间 <span className="text-red-500">*</span>
             </label>
             <input
-              type="datetime-local"
+              type="date"
               id="deadline"
               name="deadline"
               onChange={(e) => {
-                const date = new Date(e.target.value);
-                setFormData(prev => ({ ...prev, deadline: Math.floor(date.getTime() / 1000) }));
+                // 将选择的日期转换为当天0点0分0秒的时间戳
+                const selectedDate = new Date(e.target.value);
+                // 设置为当天0点
+                selectedDate.setHours(0, 0, 0, 0);
+                const timestamp = Math.floor(selectedDate.getTime() / 1000);
+                setFormData(prev => ({ ...prev, deadline: timestamp }));
               }}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
               required
@@ -348,7 +365,10 @@ const PublishForm = () => {
             {errors.qq && (
               <p className="text-red-500 text-xs mt-1">{errors.qq}</p>
             )}
-            <p className="text-blue-600 text-xs mt-1">如有需要添加客服QQ ： 88888888联系沟通</p>
+            {errors.contact && (
+              <p className="text-red-500 text-xs mt-1">{errors.contact}</p>
+            )}
+            <p className="text-red-600 text-xs mt-2">*请留下最少一种联系方式，以便我们与您联系</p>
           </div>
           
           {/* 账号要求 */}
@@ -374,6 +394,15 @@ const PublishForm = () => {
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
                 <span className="ml-2 text-sm text-gray-700">需要人脸验证解封</span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={formData.requirements_json.other_requirements === 1}
+                  onChange={() => handleCheckboxChange('other_requirements')}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <span className="ml-2 text-sm text-gray-700">需要实名认证</span>
               </label>
             </div>
           </div>

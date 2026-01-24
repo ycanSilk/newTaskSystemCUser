@@ -49,7 +49,22 @@ const MyAccountRentalPage = () => {
       icon: <SearchOutlined className="text-xl" />, // 替换为SearchOutlined，表示寻找/搜索
       color: 'bg-amber-100',
       path: '/accountrental/my-account-rental/rentalrequest'
+    },
+    {
+      id: 'help-center',
+      title: '我应征的求租信息',
+      icon: <SearchOutlined className="text-xl" />, // 替换为SearchOutlined，表示寻找/搜索
+      color: 'bg-yellow-100',
+      path: '/accountrental/my-account-rental/myapplication'
+    },
+    {
+      id: 'applied-lease-info',
+      title: '待审核的应征信息',
+      icon: <SearchOutlined className="text-xl" />, // 替换为SearchOutlined，表示寻找/搜索
+      color: 'bg-yellow-100',
+      path: '/accountrental/my-account-rental/reviewapplication'
     }
+
   ];
 
   // 处理菜单项点击
