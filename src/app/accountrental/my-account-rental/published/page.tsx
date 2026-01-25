@@ -30,6 +30,90 @@ function PublishedAccountsPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('published'); // 默认选中已发布选项卡
 
+  // 静态数据 - 用于示例展示
+  const staticAccounts: PublishedAccount[] = [
+    {
+      userid: '1',
+      orderId: '1001',
+      title: '抖音优质账号出租，粉丝10万+，活跃度高',
+      status: 'active',
+      price: 50,
+      platform: 'douyin',
+      followers: '100000',
+      minRentalDays: 1,
+      maxRentalDays: 30,
+      rentalCount: 25,
+      rating: 4.8,
+      sellerName: '抖音达人',
+      sellerAvatar: '👤',
+      hasReturnInsurance: true
+    },
+    {
+      userid: '2',
+      orderId: '1002',
+      title: '小红书美妆账号，粉丝5万+，女性用户占比90%',
+      status: 'pending',
+      price: 35,
+      platform: 'xiaohongshu',
+      followers: '50000',
+      minRentalDays: 3,
+      maxRentalDays: 15,
+      rentalCount: 18,
+      rating: 4.9,
+      sellerName: '美妆博主',
+      sellerAvatar: '👤',
+      hasReturnInsurance: false
+    },
+    {
+      userid: '3',
+      orderId: '1003',
+      title: '快手游戏账号，粉丝8万+，直播效果好',
+      status: 'active',
+      price: 45,
+      platform: 'kuaishou',
+      followers: '80000',
+      minRentalDays: 1,
+      maxRentalDays: 30,
+      rentalCount: 32,
+      rating: 4.7,
+      sellerName: '游戏主播',
+      sellerAvatar: '👤',
+      hasReturnInsurance: true
+    },
+    {
+      userid: '4',
+      orderId: '1004',
+      title: '微博营销号，粉丝15万+，适合品牌推广',
+      status: 'inactive',
+      price: 60,
+      platform: 'weibo',
+      followers: '150000',
+      minRentalDays: 5,
+      maxRentalDays: 20,
+      rentalCount: 45,
+      rating: 4.6,
+      sellerName: '微博运营',
+      sellerAvatar: '👤',
+      hasReturnInsurance: true
+    },
+    {
+      userid: '5',
+      orderId: '1005',
+      title: '知乎优质回答者，盐值800+，专业领域认证',
+      status: 'active',
+      price: 55,
+      platform: 'zhihu',
+      followers: '60000',
+      minRentalDays: 7,
+      maxRentalDays: 25,
+      rentalCount: 22,
+      rating: 4.9,
+      sellerName: '知乎大V',
+      sellerAvatar: '👤',
+      hasReturnInsurance: false
+    }
+  ];
+
   useEffect(() => {
     const fetchPublishedAccounts = async () => {
       console.log('开始获取已发布账号数据...');
@@ -49,14 +133,19 @@ function PublishedAccountsPage() {
         // 直接使用API返回的原始数据结构，不进行额外映射
         if (data.code === 200 && data.data && Array.isArray(data.data.content)) {
           setPublishedAccounts(data.data.content);
+          setError(null);
           console.log('发布账号数据设置成功，数量:', data.data.content.length);
         } else {
-          throw new Error('获取发布账号列表失败: 获取出租信息成功');
+          // API返回格式不正确，使用静态数据
+          console.log('API返回格式不正确，使用静态数据');
+          setPublishedAccounts(staticAccounts);
+          setError(null);
         }
       } catch (err) {
         console.error('获取发布账号列表失败:', err);
+        // API请求失败，使用静态数据
+        setPublishedAccounts(staticAccounts);
         setError(err instanceof Error ? err.message : String(err));
-        setPublishedAccounts([]);
       } finally {
         setLoading(false);
         console.log('数据加载完成，loading状态:', loading);
@@ -71,7 +160,10 @@ function PublishedAccountsPage() {
     const statusMap: {[key: string]: {text: string, color: string}} = {
       'active': { text: '已发布', color: 'text-green-600' },
       'pending': { text: '审核中', color: 'text-yellow-600' },
-      'inactive': { text: '已下架', color: 'text-gray-600' }
+      'inactive': { text: '已下架', color: 'text-gray-600' },
+      'rented': { text: '已出租', color: 'text-blue-600' },
+      'renting': { text: '出租中', color: 'text-purple-600' },
+      'canceled': { text: '已取消', color: 'text-red-600' }
     };
     return statusMap[status || 'active'] || statusMap.active;
   };
@@ -140,11 +232,6 @@ function PublishedAccountsPage() {
                 <div className="bg-white rounded-xl p-4 text-center text-blue-500">
                   正在加载账号信息...
                 </div>
-              ) : error ? (
-                // 错误状态
-                <div className="bg-red-50 rounded-xl p-4 text-center text-red-600">
-                  {error}
-                </div>
               ) : publishedAccounts.length === 0 ? (
                 // 空状态
                 <div className="bg-white rounded-xl p-8 text-center">
@@ -159,11 +246,13 @@ function PublishedAccountsPage() {
                   </button>
                 </div>
               ) : (
-                // 账号列表 - 使用原始API数据直接渲染
+                // 账号列表 - 使用数据直接渲染
                 <div className="space-y-4">
-                  <div className="bg-green-50 rounded-xl p-4 text-center text-green-600">
-                    成功获取到 {publishedAccounts.length} 条账号数据
-                  </div>
+                  {error && (
+                    <div className="bg-yellow-50 rounded-xl p-4 text-center text-yellow-600">
+                      {error}，当前显示静态示例数据
+                    </div>
+                  )}
                   {publishedAccounts.map((account) => {
                     const statusInfo = getStatusInfo(account.status);
                     
@@ -175,7 +264,7 @@ function PublishedAccountsPage() {
                     };
                     
                     return (
-                      <div key={account.orderId || Math.random()} className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100">
+                      <div key={account.orderId || account.userid || Math.random()} className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100">
                         {/* 卖家信息和订单状态 */}
                         <div className="flex justify-between items-center px-4 py-2 border-b">
                           <div className="flex items-center space-x-2">

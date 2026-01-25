@@ -7,7 +7,7 @@ import { AxiosRequestConfig } from 'axios';
 // 导入Next.js的cookies工具，用于获取Cookie中的token
 import { cookies } from 'next/headers';
 // 导入API配置，使用里面的默认请求头和token配置
-import { apiConfig } from '../config';
+import { apiConfig } from '@/api/client/config';
 
 /**
  * 请求拦截器函数

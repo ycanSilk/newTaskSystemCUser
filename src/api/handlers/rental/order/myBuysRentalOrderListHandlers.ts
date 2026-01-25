@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import apiClient from '@/api/client';
 import { MY_BUYS_RENTAL_ORDER_LIST_ENDPOINT } from '@/api/endpoints/rental';
 import { handleApiError, createErrorResponse } from '@/api/client/errorHandler';
-import type { MyBuysRentalOrderListResponseData } from '@/api/types/rental/requestRental/myBuysRentalOrderListTypes';
+import  { MyBuysRentalOrderListResponseData } from '@/api/types/rental/order/myBuysRentalOrderListTypes';
 
 /**
  * 获取我购买的租赁订单列表处理函数

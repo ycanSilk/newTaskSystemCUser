@@ -12,7 +12,6 @@ import SearchOutlined from '@ant-design/icons/SearchOutlined';
 interface MenuItem {
   id: string;
   title: string;
-  icon: React.ReactNode;
   color: string;
   path?: string;
 }
@@ -25,44 +24,44 @@ const MyAccountRentalPage = () => {
     {
       id: 'rental-orders',
       title: '我出售的租赁订单',
-      icon: <ShopOutlined className="text-xl" />, // 保留ShopOutlined，适合表示出租业务
       color: 'bg-blue-100',
       path: '/accountrental/my-account-rental/mysellerrentalorder'
     },
     {
       id: 'lease-orders',
-      title: '我购买的租赁订单',
-      icon: <TransactionOutlined className="text-xl" />, // 替换为TransactionOutlined，更适合表示交易/订单
+      title: '我购买的租赁订单',      
       color: 'bg-green-100',
-      path: '/accountrental/my-account-rental/myrentedorder'
+      path: '/accountrental/my-account-rental/mybuysrentedorder'
     },
     {
       id: 'rental-info',
-      title: '我发布的出租',
-      icon: <DeploymentUnitOutlined className="text-xl" />, // 替换为DeploymentUnitOutlined，表示发布/上线
+      title: '我发布的出租信息',
       color: 'bg-purple-100',
-      path: '/accountrental/my-account-rental/rentaloffer'
+      path: '/accountrental/my-account-rental/myrelearentalinfo'
     },
     {
       id: 'lease-info',
-      title: '我发布的求租',
-      icon: <SearchOutlined className="text-xl" />, // 替换为SearchOutlined，表示寻找/搜索
+      title: '我发布的求租信息',
       color: 'bg-amber-100',
-      path: '/accountrental/my-account-rental/rentalrequest'
+      path: '/accountrental/my-account-rental/myrelearrequestrentalinfo'
     },
     {
       id: 'help-center',
       title: '我应征的求租信息',
-      icon: <SearchOutlined className="text-xl" />, // 替换为SearchOutlined，表示寻找/搜索
       color: 'bg-yellow-100',
       path: '/accountrental/my-account-rental/myapplication'
     },
     {
       id: 'applied-lease-info',
       title: '待审核的应征信息',
-      icon: <SearchOutlined className="text-xl" />, // 替换为SearchOutlined，表示寻找/搜索
       color: 'bg-yellow-100',
       path: '/accountrental/my-account-rental/reviewapplication'
+    },
+    {
+      id: 'workorder',
+      title: '我的工单',
+      color: 'bg-yellow-100',
+      path: '/accountrental/workorder'
     }
 
   ];
@@ -91,12 +90,7 @@ const MyAccountRentalPage = () => {
                   touchAction: 'manipulation'
                 }}
               >
-                <div className="flex items-center space-x-3">
-                  <div className={`w-10 h-10 rounded-full ${item.color} flex items-center justify-center text-xl`}>
-                    {item.icon}
-                  </div>
-                  <span className="font-medium">{item.title}</span>
-                </div>
+                <div className="flex items-center space-x-3">{item.title}</div>
                 <div className="text-gray-400">
                   <RightOutlined className="h-5 w-5" />
                 </div>
