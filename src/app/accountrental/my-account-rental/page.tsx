@@ -24,14 +24,14 @@ const MyAccountRentalPage = () => {
   const menuItems: MenuItem[] = [
     {
       id: 'rental-orders',
-      title: '我出租的订单',
+      title: '我出售的租赁订单',
       icon: <ShopOutlined className="text-xl" />, // 保留ShopOutlined，适合表示出租业务
       color: 'bg-blue-100',
-      path: '/accountrental/my-account-rental/myrentalorder'
+      path: '/accountrental/my-account-rental/mysellerrentalorder'
     },
     {
       id: 'lease-orders',
-      title: '我租用的订单',
+      title: '我购买的租赁订单',
       icon: <TransactionOutlined className="text-xl" />, // 替换为TransactionOutlined，更适合表示交易/订单
       color: 'bg-green-100',
       path: '/accountrental/my-account-rental/myrentedorder'

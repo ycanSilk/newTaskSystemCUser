@@ -36,5 +36,15 @@ export const APPLY_REQUEST_RENTAL_INFO_ENDPOINT = `/rental/applications/apply.ph
 export const GET_APPLIED_REQUEST_RENTAL_INFO_LIST_ENDPOINT = `/rental/applications/list.php`;
 
 //审核求租信息应征申请
-export const REVIEW_APPLIED_REQUEST_RENTAL_INFO_ENDPOINT = `/api/rental/applications/review.php`;
+export const REVIEW_APPLIED_REQUEST_RENTAL_INFO_ENDPOINT = `/rental/applications/review.php`;
 
+
+
+//同样租赁订单接口
+//我购买的租赁订单
+export const MY_BUYS_RENTAL_ORDER_LIST_ENDPOINT = '/rental/orders/my-buyer.php'
+
+
+
+//我出售的租赁订单
+export const MY_SELLER_RENTAL_ORDER_LIST_ENDPOINT = '/rental/orders/my-seller.php'

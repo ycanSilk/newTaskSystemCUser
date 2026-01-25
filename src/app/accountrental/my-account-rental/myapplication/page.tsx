@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
-import { ApplicationItem } from '@app/types/rental/requestRental/getApplyedRequestRentalInfoListTypes';
+import { ApplicationItem } from '@/app/types/rental/requestRental/getApplyedRequestRentalInfoListTypes';
 
 // 客户端组件
 const MyApplicationsPage = () => {
@@ -12,44 +12,51 @@ const MyApplicationsPage = () => {
   const [applications, setApplications] = useState<ApplicationItem[]>([]);
   // 加载状态
   const [loading, setLoading] = useState<boolean>(true);
+  // 分页信息
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(20);
+  const [total, setTotal] = useState<number>(0);
+
+  // 获取申请列表数据函数
+  const fetchApplications = async () => {
+    setLoading(true);
+    try {
+      // 调用API获取数据，传入当前页码和每页条数
+      const response = await fetch(`/api/rental/requestRental/getApplyedRequestRentalInfoList?page=${currentPage}&page_size=${pageSize}&`);
+      const data = await response.json();
+      console.log('获取申请列表响应:', data);
+      
+      // 检查响应是否成功
+      if (data.success === true && data.data) {
+        setApplications(data.data.list);
+        setTotal(data.data.total);
+        setPageSize(data.data.page_size);
+      } else {
+        console.error('API响应不符合预期，未设置数据:', data);
+      }
+    } catch (error) {
+      console.error('获取申请列表失败:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // 页面加载时获取申请列表数据
   useEffect(() => {
-    const fetchApplications = async () => {
-      setLoading(true);
-      try {
-        // 调用API获取数据
-        const response = await fetch('/api/rental/requestRental/getApplyedRequestRentalInfoList?page=1&page_size=20&');
-        const data = await response.json();
-        console.log('获取申请列表响应:', data);
-        
-        // 检查响应是否成功
-        if (data.success === true && data.data && data.data.list) {
-          setApplications(data.data.list);
-        } else {
-          console.error('API响应不符合预期，未设置数据:', data);
-        }
-      } catch (error) {
-        console.error('获取申请列表失败:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchApplications();
-  }, []);
+  }, [currentPage, pageSize]);
 
   // 根据订单状态返回对应的样式类名
   const getOrderStatusClass = (statusText: string): string => {
     switch (statusText) {
       case '待审核':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-green-500 text-white';
       case '已通过':
-        return 'bg-green-100 text-green-800';
+        return 'bg-blue-500 text-white';
       case '已拒绝':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-500 text-white';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-green-500 text-white';
     }
   };
 
@@ -147,13 +154,34 @@ const MyApplicationsPage = () => {
         {/* 分页 */}
         <div className="mt-6 flex justify-center">
           <div className="flex items-center space-x-2">
-            <Button variant="ghost" disabled>
+            {/* 上一页按钮 */}
+            <Button 
+              variant="ghost" 
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(currentPage - 1)}
+            >
               上一页
             </Button>
-            <Button variant="primary">1</Button>
-            <Button variant="ghost">2</Button>
-            <Button variant="ghost">3</Button>
-            <Button variant="ghost">下一页</Button>
+            
+            {/* 页码按钮 */}
+            {Array.from({ length: Math.ceil(total / pageSize) }, (_, i) => i + 1).map((page) => (
+              <Button 
+                key={page}
+                variant={currentPage === page ? "primary" : "ghost"}
+                onClick={() => setCurrentPage(page)}
+              >
+                {page}
+              </Button>
+            ))}
+            
+            {/* 下一页按钮 */}
+            <Button 
+              variant="ghost" 
+              disabled={currentPage === Math.ceil(total / pageSize)}
+              onClick={() => setCurrentPage(currentPage + 1)}
+            >
+              下一页
+            </Button>
           </div>
         </div>
       </div>
