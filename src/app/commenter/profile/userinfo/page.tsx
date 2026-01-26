@@ -2,11 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-// 导入类型定义
-import { GetUserInfoResponse } from '@/app/types/users/getUserInfoTypes';
+// 导入useUserStore状态管理
+import { useUserStore } from '@/store/userStore';
 
 export default function PersonalInfoPage() {
   const router = useRouter();
+  
+  // 使用useUserStore获取用户信息
+  const { currentUser, isLoading: storeLoading, error: storeError } = useUserStore();
   
   // 用户个人信息状态
   const [userProfile, setUserProfile] = useState({
@@ -23,68 +26,33 @@ export default function PersonalInfoPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // 获取用户信息函数
-  const fetchUserInfo = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      // 执行API请求，调用中间件路由
-      const apiUrl = '/api/users/getUserInfo';
-      const response = await fetch(apiUrl, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': '*/*'
-        },
-        signal: AbortSignal.timeout(10000),
-        credentials: 'include' // 确保跨域请求时携带凭证（Cookie）
+  // 更新用户信息状态
+  useEffect(() => {
+    if (currentUser) {
+      setUserProfile({
+        id: currentUser.id || '',
+        name: currentUser.username || '',
+        phone: currentUser.phone || '',
+        email: currentUser.email || '',
+        invitationCode: currentUser.invitationCode || '',
+        createdAt: currentUser.createdAt ? new Date(currentUser.createdAt).toLocaleDateString() : '',
+        avatar: '/images/default.png' // 暂时使用默认头像
       });
-      
-      // 处理API响应
-      if (!response.ok) {
-        try {
-          const errorData = await response.json();
-          const errorMsg = errorData.message || `请求失败：${response.status}`;
-          throw new Error(errorMsg);
-        } catch (jsonError) {
-          throw new Error(`请求失败：${response.status}`);
-        }
-      }
-      
-      // 解析成功响应，使用指定的类型定义
-      const data: GetUserInfoResponse = await response.json();
-      
-      // 验证数据结构
-      if (data.code === 0 && data.data) {
-        const userInfo = data.data;
-        
-        // 更新用户信息状态
-        setUserProfile({
-          id: String(userInfo.id || ''),
-          name: userInfo.username || '',
-          phone: userInfo.phone || '',
-          email: userInfo.email,
-          invitationCode: userInfo.invite_code || '',
-          createdAt: userInfo.created_at ? new Date(userInfo.created_at).toLocaleDateString() : '',
-          avatar: '/images/default.png' // 暂时使用默认头像
-        });
-      } else {
-        throw new Error(data.message || '获取用户信息失败');
-      }
-    } catch (err) {
-      // 错误处理
-      const errorMessage = err instanceof Error ? err.message : '获取用户信息失败';
-      setError(errorMessage);
-    } finally {
+      setIsLoading(false);
+    } else if (storeError) {
+      setError(storeError);
       setIsLoading(false);
     }
-  };
+  }, [currentUser, storeError]);
   
   // 组件加载时执行
   useEffect(() => {
-    fetchUserInfo();
-  }, []);
+    // 如果store中没有用户信息，手动获取
+    if (!currentUser && !storeLoading) {
+      // 可以在这里添加手动获取用户信息的逻辑
+      setIsLoading(false);
+    }
+  }, [currentUser, storeLoading]);
   
   // 手机号脱敏处理
   const maskPhone = (phone: string): string => {
@@ -110,7 +78,8 @@ export default function PersonalInfoPage() {
 
   // 处理返回
   const handleBack = () => {
-    router.back();
+    // 跳转到评论大厅页面
+    router.push('/commenter/hall');
   };
 
   // 信息项组件
@@ -157,9 +126,29 @@ export default function PersonalInfoPage() {
   
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* 页面顶部导航 */}
+      <div className="fixed top-0 left-0 right-0 bg-blue-500 text-white p-4 shadow-md z-50">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            {/* 返回按钮 */}
+            <button 
+              onClick={handleBack} 
+              className="text-white p-1 hover:bg-blue-600 rounded-full"
+              aria-label="返回"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            {/* 页面标题 */}
+            <h1 className="text-xl font-medium">个人信息</h1>
+          </div>
+        </div>
+      </div>
+      
       {/* 个人信息表单 */}
       {userProfile.id && (
-        <div className="mt-4 bg-white shadow-sm">
+        <div className="mt-20 bg-white shadow-sm mx-4 rounded-lg overflow-hidden">
           {/* 头像 */}
           <div className="p-4 border-b border-gray-100 flex justify-between items-center">
             <span className="text-gray-800">头像</span>
@@ -178,7 +167,6 @@ export default function PersonalInfoPage() {
             </div>
           </div>
           
-
           {/* 名字 */}
           <InfoItem label="用户名" value={userProfile.name || '未设置'} editable={false} />
 
@@ -193,7 +181,6 @@ export default function PersonalInfoPage() {
 
           {/* 注册时间 */}
           <InfoItem label="注册时间" value={userProfile.createdAt || '未获取'} editable={false} />
-
 
           <div onClick={() => router.push('/commenter/profile/changepwd')} className="p-4 border-b border-gray-100 bg-blue-500 hover:bg-blue-600 text-white text-center shadow">
             修改密码

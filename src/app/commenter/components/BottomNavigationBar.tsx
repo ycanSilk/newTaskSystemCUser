@@ -28,13 +28,13 @@ export default function BottomNavigationBar({}: BottomNavigationBarProps) {
           <span className={`text-xs ${isActive('/tasks?tab=ACCEPTED') ? 'text-blue-500' : 'text-black'}`}>评论进行</span>
         </EncryptedLink>
         <EncryptedLink
-          href="/accountrental/account-rental-market?from=commenter-hall"
+          href="/rental/rental_market"
           className="flex flex-col items-center"
         >
-          <span className={`text-lg w-6 h-6 flex items-center justify-center ${isActive('/accountrental') ? 'text-blue-500' : 'text-black'}`}>
+          <span className={`text-lg w-6 h-6 flex items-center justify-center ${isActive('/rental/rental_market') ? 'text-blue-500' : 'text-black'}`}>
             <PropertySafetyOutlined />
           </span>
-          <span className={`text-xs ${isActive('/accountrental') ? 'text-blue-500' : 'text-black'}`}>租赁市场</span>
+          <span className={`text-xs ${isActive('/rental/rental_market') ? 'text-blue-500' : 'text-black'}`}>租赁市场</span>
         </EncryptedLink>
          <EncryptedLink
           href="/commenter/hall"

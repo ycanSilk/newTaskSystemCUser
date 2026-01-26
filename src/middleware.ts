@@ -5,7 +5,7 @@ import { decryptRoute, isEncryptedRoute, encryptRoute } from './lib/routeEncrypt
 
 // 需要加密的一级路由列表（包含所有页面路由）
 // 这里定义了哪些路由需要进行加密处理
-const encryptableRoutes = ['commenter', 'accountrental'];
+const encryptableRoutes = ['commenter', 'rental'];
 
 // 定义公共路径（不需要登录即可访问）
 // 这些路径任何人都可以访问，不需要登录验证
@@ -13,7 +13,7 @@ const publicPaths = ['/commenter/auth/login', '/commenter/auth/register', ];
 
 // 定义需要保护的路径前缀
 // 这些路径需要用户登录后才能访问
-const protectedPathPrefixes = ['/commenter', '/accountrental'];
+const protectedPathPrefixes = ['/commenter', '/rental'];
 
 /**
  * 检查路径是否为公共路径
