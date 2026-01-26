@@ -6,11 +6,18 @@ import { SendOutlined, PaperClipOutlined, CloseOutlined } from '@ant-design/icon
 import type { UploadProps } from 'antd';
 
 // 引入工单详情类型定义
-import { WorkOrderDetail, WorkOrderDetailResponse } from '../../../types/workorder/getOrderDetailInfoTypes';
+import { WorkOrderDetail, WorkOrderDetailResponse } from '@/app/accountrental/types/workorder/getOrderDetailInfoTypes';
+// 引入发送消息类型定义
+import { SendMessageRequest, SendMessageResponse, SendMessageResponseData } from '@/app/accountrental/types/workorder/sendMessageTypes';
+// 引入用户状态管理
+import { useUserStore } from '@/store/userStore';
 
 const WorkOrderDetailPage = () => {
   const params = useParams();
   const router = useRouter();
+  
+  // 获取当前登录用户信息和方法
+  const { currentUser, fetchUser } = useUserStore();
   
   // 从路由参数和查询参数中获取数据
   const ticketIdFromPath = params.id as string;
@@ -23,6 +30,9 @@ const WorkOrderDetailPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [messageContent, setMessageContent] = useState<string>('');
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  // 轮询相关状态
+  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
+  const [lastUpdateTime, setLastUpdateTime] = useState<number>(Date.now());
   
   // 获取URL查询参数
   useEffect(() => {
@@ -35,13 +45,27 @@ const WorkOrderDetailPage = () => {
     setTicketId(ticketIdParam);
   }, [ticketIdFromPath]);
   
-  // 消息列表滚动到底部的引用
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  // 消息列表容器引用，用于滚动控制
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   
-  // 滚动到底部
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  // 滚动消息列表到底部
+  const scrollMessagesToBottom = () => {
+    console.log('=== 执行滚动消息列表到底部 ===');
+    console.log('messagesContainerRef.current:', messagesContainerRef.current);
+    if (messagesContainerRef.current) {
+      // 使用setTimeout确保DOM已经更新
+      setTimeout(() => {
+        messagesContainerRef.current!.scrollTop = messagesContainerRef.current!.scrollHeight;
+      }, 0);
+    }
   };
+  
+  // 获取用户信息
+  useEffect(() => {
+    console.log('=== 获取用户信息 ===');
+    // 调用fetchUser确保currentUser有值
+    fetchUser();
+  }, []);
   
   // 页面加载时获取工单详情
   useEffect(() => {
@@ -54,36 +78,144 @@ const WorkOrderDetailPage = () => {
   
   // 消息更新时滚动到底部
   useEffect(() => {
-    scrollToBottom();
+    // 只有当有消息时才滚动
+    if (workOrder && workOrder.recent_messages && workOrder.recent_messages.length > 0) {
+      scrollMessagesToBottom();
+    }
   }, [workOrder?.recent_messages]);
   
-  // 获取工单详情
-  const fetchWorkOrderDetail = async () => {
-    // 如果ticket为空，不发送请求
+  // 组件初始化完成后滚动到底部
+  useEffect(() => {
+    // 确保组件已经挂载且有消息列表
+    if (workOrder && workOrder.recent_messages && workOrder.recent_messages.length > 0) {
+      scrollMessagesToBottom();
+    }
+  }, []);
+  
+  // 页面加载完成后滚动到底部
+  useEffect(() => {
+    // 确保组件已经挂载
+    scrollMessagesToBottom();
+  }, []);
+  
+  // 定时轮询逻辑，每60秒获取一次工单详情
+  useEffect(() => {
+    console.log('=== 轮询效果设置 ===');
+    console.log('当前ticket值:', ticket);
     if (!ticket) {
-      console.log('ticket值为空，不发送API请求');
-      setLoading(false);
+      console.log('ticket为空，不启动轮询');
       return;
     }
     
-    setLoading(true);
+    // 轮询函数
+    const pollWorkOrderDetail = async () => {
+      try {
+        console.log('=== 开始轮询获取工单详情 ===');
+        // 调用现有的fetchWorkOrderDetail函数获取最新数据，设置showLoading为false实现无感刷新
+        await fetchWorkOrderDetail(false);
+        // 更新最后更新时间
+        setLastUpdateTime(Date.now());
+        console.log('=== 轮询结束，最后更新时间:', new Date(Date.now()).toLocaleTimeString());
+      } catch (err) {
+        console.error('轮询获取工单详情失败:', err);
+      }
+    };
+    
+    // 立即执行一次轮询，然后每60秒执行一次
+    console.log('立即执行一次轮询...');
+    pollWorkOrderDetail();
+    
+    // 启动轮询，每60秒执行一次
+    console.log('启动轮询，每60秒执行一次');
+    const interval = setInterval(pollWorkOrderDetail, 60000);
+    setPollingInterval(interval);
+    console.log('轮询定时器ID:', interval);
+    
+    // 组件卸载时清除轮询
+    return () => {
+      console.log('=== 清除轮询定时器 ===');
+      if (interval) {
+        clearInterval(interval);
+        setPollingInterval(null);
+        console.log('轮询定时器已清除');
+      }
+    };
+  }, [ticket]);
+  
+  // 获取工单详情
+  const fetchWorkOrderDetail = async (showLoading: boolean = true) => {
+    console.log('=== 开始获取工单详情 ===');
+    console.log('showLoading参数:', showLoading);
+    // 如果ticket为空，不发送请求
+    if (!ticket) {
+      console.log('ticket值为空，不发送API请求');
+      if (showLoading) {
+        setLoading(false);
+      }
+      return;
+    }
+    
+    // 根据showLoading参数决定是否显示加载状态
+    if (showLoading) {
+      setLoading(true);
+    }
     setError(null);
     try {
-        console.log('从url获取的ticketNo', ticket);
-      // 调用实际的API请求获取工单详情
+      console.log('调用API获取工单详情，ticket:', ticket);
+      // 调用实际的API请求获取工单详情，添加缓存控制
       const response = await fetch(`/api/workOrder/getOrderDetailInfo?ticket=${ticket}`, {
         method: 'GET',
+        credentials: 'include', // 包含cookie，确保认证Token被发送
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate', // 禁用缓存
+          'Pragma': 'no-cache',
+          'Expires': '0'
         }
       });
       
+      console.log('API响应状态:', response.status);
       const data: WorkOrderDetailResponse = await response.json();
+      console.log('API响应数据:', data);
       
       if (data.code === 0) {
-        // API调用成功，更新工单详情
-        setWorkOrder(data.data);
-        message.success(data.message || '获取工单详情成功');
+        // API调用成功
+        console.log('=== API调用成功，处理工单详情 ===');
+        
+        // 打印API返回的所有消息，重点关注最新消息
+        console.log('API返回的消息总数量:', data.data.recent_messages.length);
+        console.log('API返回的消息ID范围:', {
+          minId: Math.min(...data.data.recent_messages.map(msg => msg.id)),
+          maxId: Math.max(...data.data.recent_messages.map(msg => msg.id))
+        });
+        
+        // 获取当前消息列表的消息ID集合
+        const currentMessageIds = new Set(workOrder?.recent_messages?.map(msg => msg.id) || []);
+        console.log('当前消息ID集合:', Array.from(currentMessageIds));
+        
+        // 检测所有新消息（不仅仅是客服消息）
+        const newMessages = data.data.recent_messages.filter(msg => !currentMessageIds.has(msg.id));
+        console.log('新消息数量:', newMessages.length);
+        console.log('新消息列表:', newMessages);
+        
+        // 如果有新消息，或者当前没有消息列表，就更新
+        const hasNewMessages = newMessages.length > 0 || !workOrder?.recent_messages?.length;
+        
+        if (hasNewMessages) {
+          // 有新消息，更新工单详情
+          console.log('=== 检测到新消息，更新工单详情 ===');
+          setWorkOrder(data.data);
+          // 记录最后更新时间
+          setLastUpdateTime(Date.now());
+          
+          // 立即滚动消息列表到底部
+          setTimeout(() => {
+            scrollMessagesToBottom();
+          }, 100);
+        } else {
+          // 没有新消息，不更新
+          console.log('=== 没有检测到新消息，不更新工单详情 ===');
+        }
       } else {
         // API调用失败，显示错误信息
         setError(data.message || '获取工单详情失败');
@@ -94,21 +226,78 @@ const WorkOrderDetailPage = () => {
       message.error('获取工单详情失败，请稍后重试');
       console.error('获取工单详情失败:', err);
     } finally {
-      setLoading(false);
+      // 根据showLoading参数决定是否隐藏加载状态
+      if (showLoading) {
+        setLoading(false);
+      }
+      console.log('=== 获取工单详情结束 ===');
     }
   };
   
   // 发送消息
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
+    console.log('=== 开始发送消息 ===');
+    console.log('消息内容:', messageContent);
+    console.log('上传图片:', uploadedImages);
+    
     if (!messageContent.trim() && uploadedImages.length === 0) {
       message.warning('请输入消息内容或上传图片');
       return;
     }
     
-    // 模拟发送消息
-    message.success('消息发送成功');
-    setMessageContent('');
-    setUploadedImages([]);
+    // 保存当前发送的消息内容和附件，用于构建新消息
+    const sentContent = messageContent;
+    const sentAttachments = [...uploadedImages];
+    
+    try {
+      // 构建请求体
+      const requestBody: SendMessageRequest = {
+        ticket_id: parseInt(ticketId),
+        message_type: 0,
+        content: messageContent,
+        attachments: uploadedImages
+      };
+      
+      // 调用API发送消息
+      console.log('调用API发送消息，请求体:', requestBody);
+      const response = await fetch('/api/workOrder/sendMessage', {
+        method: 'POST',
+        credentials: 'include', // 包含cookie，确保认证Token被发送
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      });
+      
+      console.log('API响应状态:', response.status);
+      const data: SendMessageResponse = await response.json();
+      console.log('API响应数据:', data);
+      
+      // 检查success字段（根据实际API响应，返回的是success字段）
+      if (data.success) {
+        // 发送成功
+        console.log('=== 消息发送成功 ===');
+        
+        // 立即清空输入框和已上传图片
+        console.log('=== 清空输入框和已上传图片 ===');
+        setMessageContent('');
+        setUploadedImages([]);
+        
+        // 立即获取最新消息列表，确保消息列表更新
+        console.log('=== 立即获取最新消息列表 ===');
+        await fetchWorkOrderDetail(false);
+        
+        // 滚动消息列表到底部
+        scrollMessagesToBottom();
+      } else {
+        // 发送失败
+        message.error(data.message || '消息发送失败');
+      }
+    } catch (err) {
+      message.error('消息发送失败，请稍后重试');
+      console.error('发送消息失败:', err);
+    }
+    console.log('=== 发送消息结束 ===');
   };
   
   // 关闭工单
@@ -153,11 +342,13 @@ const WorkOrderDetailPage = () => {
               {workOrder.status_text}
             </Tag>
           </div>
-          <div className="text-xs text-gray-500 mb-3">
-            工单编号：{workOrder.ticket_no} | 创建时间：{workOrder.created_at} | 更新时间：{workOrder.updated_at}
+          <div className="text-xs space-y-1 mb-3">
+            <p>工单编号：{workOrder.ticket_no}</p>
+            <p>创建时间：{workOrder.created_at}</p>
+            <p>更新时间：{workOrder.updated_at}</p>
           </div>
           <div className="bg-blue-50 border border-blue-200 p-3 rounded-md mb-3">
-            <p className="text-sm font-medium mb-1">工单描述：</p>
+            <p className="text-sm font-medium mb-1">问题描述：</p>
             <p className="text-xs">{workOrder.description}</p>
           </div>
         </div>
@@ -168,25 +359,24 @@ const WorkOrderDetailPage = () => {
         <div className="mb-4">
           <h3 className="text-sm font-semibold mb-3">订单信息</h3>
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-gray-50 p-3 rounded-md">
-              <p className="text-xs text-gray-500 mb-1">订单ID</p>
-              <p className="text-sm font-medium">{workOrder.order_info.order_id}</p>
+            <div className="bg-gray-100 p-3 rounded-md">
+              <p className="text-xs">订单ID:{workOrder.order_info.order_id}</p>
+              
             </div>
-            <div className="bg-gray-50 p-3 rounded-md">
-              <p className="text-xs text-gray-500 mb-1">订单类型</p>
-              <p className="text-sm font-medium">{workOrder.order_info.source_type_text}</p>
+            <div className="bg-gray-100 p-3 rounded-md">
+              <p className="text-xs">订单类型:{workOrder.order_info.source_type_text}</p>
+              
             </div>
-            <div className="bg-gray-50 p-3 rounded-md">
-              <p className="text-xs text-gray-500 mb-1">订单金额</p>
-              <p className="text-sm font-medium text-red-500">¥{workOrder.order_info.total_amount_yuan}</p>
+            <div className="bg-gray-100 p-3 rounded-md">
+              <p className="text-xs">订单金额:¥{workOrder.order_info.total_amount_yuan}</p>
             </div>
-            <div className="bg-gray-50 p-3 rounded-md">
-              <p className="text-xs text-gray-500 mb-1">租赁天数</p>
-              <p className="text-sm font-medium">{workOrder.order_info.days} 天</p>
+            <div className="bg-gray-100 p-3 rounded-md">
+              <p className="text-xs">租赁天数:{workOrder.order_info.days} 天</p>
+              
             </div>
-            <div className="bg-gray-50 p-3 rounded-md">
-              <p className="text-xs text-gray-500 mb-1">订单状态</p>
-              <p className="text-sm font-medium">{workOrder.order_info.order_status_text}</p>
+            <div className="bg-gray-100 p-3 rounded-md">
+              <p className="text-xs">订单状态:{workOrder.order_info.order_status_text}</p>
+              
             </div>
           </div>
         </div>
@@ -197,15 +387,13 @@ const WorkOrderDetailPage = () => {
         <div className="mb-4">
           <h3 className="text-sm font-semibold mb-3">参与人信息</h3>
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-gray-50 p-3 rounded-md">
-              <p className="text-xs text-gray-500 mb-1">买家</p>
-              <p className="text-sm font-medium">{workOrder.order_info.buyer_username}</p>
-              <p className="text-xs text-gray-500">ID: {workOrder.order_info.buyer_user_id}</p>
+            <div className="bg-gray-100 p-3 rounded-md">
+              <p className="text-xs text-blue-500 mb-1">买家</p>
+              <p className="text-sm font-medium">{workOrder.order_info.buyer_username}</p>              
             </div>
-            <div className="bg-gray-50 p-3 rounded-md">
-              <p className="text-xs text-gray-500 mb-1">卖家</p>
+            <div className="bg-gray-100 p-3 rounded-md">
+              <p className="text-xs text-blue-500 mb-1">卖家</p>
               <p className="text-sm font-medium">{workOrder.order_info.seller_username}</p>
-              <p className="text-xs text-gray-500">ID: {workOrder.order_info.seller_user_id}</p>
             </div>
           </div>
         </div>
@@ -217,48 +405,84 @@ const WorkOrderDetailPage = () => {
   const renderMessageList = () => {
     if (!workOrder?.recent_messages) return null;
     
+    // 添加消息列表渲染日志
+    console.log('=== 渲染消息列表 ===');
+    console.log('渲染的消息数量:', workOrder.recent_messages.length);
+    console.log('渲染的消息ID范围:', {
+      minId: Math.min(...workOrder.recent_messages.map(msg => msg.id)),
+      maxId: Math.max(...workOrder.recent_messages.map(msg => msg.id))
+    });
+    console.log('当前用户信息:', currentUser);
+    
     return (
       <Card className="border-0 rounded-lg shadow-sm mb-4">
         <h3 className="text-sm font-semibold mb-3">消息记录</h3>
         
         {/* 消息列表 */}
-        <div className="bg-gray-50 rounded-lg p-4 mb-4" style={{ height: '400px', overflowY: 'auto' }}>
-          {workOrder.recent_messages.map((message) => (
-            <div key={message.id} className="mb-4">
-              {/* 系统消息 */}
-              {message.sender_type === 4 && (
-                <div className="text-center mb-3">
-                  <span className="text-xs bg-gray-200 px-2 py-1 rounded-full text-gray-700">
-                    {message.created_at}
-                  </span>
-                </div>
-              )}
-              
-              <div className={`flex ${message.sender_type === 4 ? 'justify-center' : 'justify-start'}`}>
-                <div className={`max-w-[95%] ${message.sender_type === 4 ? 'bg-gray-200' : 'bg-white'} rounded-lg p-3 shadow-sm`}>
-                  <div className="text-xs text-gray-500 mb-1">
-                    {message.sender_type_text} | {message.message_type_text}
+        <div ref={messagesContainerRef} className="bg-gray-50 rounded-lg py-4 px-2 mb-4" style={{ height: '400px', overflowY: 'auto' }}>
+          {workOrder.recent_messages.map((message) => {
+            // 添加每条消息渲染日志
+            console.log(`=== 渲染消息 ${message.id} ===`);
+            console.log('消息内容:', message.content);
+            console.log('发送者类型:', message.sender_type_text);
+            console.log('发送者ID:', message.sender_id);
+            console.log('当前用户ID:', currentUser?.id);
+            
+            // 判断是否为自己发送的消息
+            const isSelf = currentUser?.id && message.sender_id === parseInt(currentUser.id);
+            console.log('是否为自己发送的消息:', isSelf);
+            
+            return (
+              <div key={message.id} className="mb-4">
+                {/* 系统消息 */}
+                {message.sender_type === 4 && (
+                  <div className="text-center mb-3">
+                    <span className="text-xs bg-gray-200 px-2 py-1 rounded-full text-gray-700">
+                      {message.created_at}
+                    </span>
                   </div>
-                  <div className="text-sm whitespace-pre-wrap">{message.content}</div>
-                  {/* 消息附件 */}
-                  {message.attachments && message.attachments.length > 0 && (
-                    <div className="mt-2 flex gap-2 flex-wrap">
-                      {message.attachments.map((attachment, index) => (
-                        <Image
-                          key={index}
-                          src={attachment}
-                          alt={`消息图片 ${index + 1}`}
-                          width={100}
-                          className="rounded cursor-pointer"
-                        />
-                      ))}
+                )}
+                
+                {/* 普通消息 - 左右分栏显示 */}
+                <div className={`flex ${message.sender_type === 4 ? 'justify-center' : isSelf ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[80%] rounded-lg p-3 shadow-sm ${message.sender_type === 4 ? 'bg-gray-200' : isSelf ? 'bg-blue-100' : 'bg-white'}`}>
+                    {/* 只显示非自己发送的消息的发送者名称 */}
+                    {!isSelf && (
+                      <div className="text-xs">
+                        {/* 修复发送者名称显示 */}
+                        {message.sender_type_text === "Admin" ? "系统客服" : 
+                         (message.sender_type_text === "C端" || message.sender_type_text === "B端") ? (currentUser?.username || "用户") : 
+                         message.sender_type_text || "系统通知"}
+                      </div>
+                    )}
+                    
+                    {/* 消息内容 */}
+                    <div className="text-sm whitespace-pre-wrap">{message.content}</div>
+                    
+                    {/* 消息附件 */}
+                    {message.attachments && message.attachments.length > 0 && (
+                      <div className="mt-2 flex gap-2 flex-wrap">
+                        {message.attachments.map((attachment, index) => (
+                          <Image
+                            key={index}
+                            src={attachment}
+                            alt={`消息图片 ${index + 1}`}
+                            width={100}
+                            className="rounded cursor-pointer"
+                          />
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* 消息时间 */}
+                    <div className="text-xs text-gray-400 mt-1 text-right">
+                      {message.created_at}
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-          <div ref={messagesEndRef} />
+            );
+          })}
         </div>
         
         {/* 发送消息区域 */}
@@ -281,8 +505,8 @@ const WorkOrderDetailPage = () => {
             </div>
           )}
           
-          <div className="flex gap-2">
-            {/* 上传图片按钮 */}
+          {/* 上传图片按钮 */}
+          <div className="mb-2">
             <Upload
               beforeUpload={handleImageUpload}
               fileList={[]}
@@ -293,17 +517,19 @@ const WorkOrderDetailPage = () => {
                 上传图片
               </Button>
             </Upload>
-            
-            {/* 输入框 */}
-            <Input.TextArea
-              value={messageContent}
-              onChange={(e) => setMessageContent(e.target.value)}
-              placeholder="输入消息内容..."
-              rows={2}
-              className="flex-1"
-            />
-            
-            {/* 发送按钮 */}
+          </div>
+          
+          {/* 输入框 */}
+          <Input.TextArea
+            value={messageContent}
+            onChange={(e) => setMessageContent(e.target.value)}
+            placeholder="输入消息内容..."
+            style={{ height: 80 }}
+            className="mb-2"
+          />
+          
+          {/* 发送按钮 */}
+          <div className="flex justify-end">
             <Button
               type="primary"
               icon={<SendOutlined />}
@@ -315,7 +541,7 @@ const WorkOrderDetailPage = () => {
           </div>
           
           {/* 底部按钮 */}
-          <div className="flex justify-end mt-3">
+          <div className="flex justify-center mt-3">
             {workOrder.can_close && (
               <Button
                 type="default"
@@ -326,6 +552,11 @@ const WorkOrderDetailPage = () => {
               </Button>
             )}
           </div>
+          
+          {/* 轮询状态显示 */}
+          <div className="text-xs text-gray-500 text-center mt-2">
+            最后更新: {new Date(lastUpdateTime).toLocaleTimeString()}
+          </div>
         </div>
       </Card>
     );
@@ -333,7 +564,7 @@ const WorkOrderDetailPage = () => {
   
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-100 px-3 pt-8 pb-16">
+      <div className="min-h-screen bg-gray-100 px-1 pt-8 pb-16">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-lg font-semibold text-gray-800 mb-6">工单详情</h1>
           <div className="bg-white p-8 text-center">
@@ -353,7 +584,7 @@ const WorkOrderDetailPage = () => {
             <p className="text-sm text-red-500 mb-4">{error}</p>
             <Button 
               type="default" 
-              onClick={fetchWorkOrderDetail} 
+              onClick={() => fetchWorkOrderDetail(true)} 
               size="small" 
               className="mt-2"
             >
