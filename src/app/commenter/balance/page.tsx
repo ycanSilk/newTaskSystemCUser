@@ -284,25 +284,26 @@ const BalancePage = () => {
                       return (
                         <div 
                           key={transaction.id}
-                          onClick={() => handleViewTransaction(transaction)}
-                          className="px-4 py-3 border-b border-gray-50 hover:bg-blue-50 flex items-center transition-colors duration-200 cursor-pointer"
+                          className="px-4 py-3 border-b border-gray-50 hover:bg-blue-50 flex items-center transition-colors duration-200 w-full"
                         >
-                          <div className={`h-8 w-8 rounded-full flex items-center justify-center ${iconInfo.bgColor} mr-3 text-lg font-bold`}>
+                          <div className={`h-8 w-8 rounded-full flex items-center justify-center ${iconInfo.bgColor} mr-3 text-lg font-bold flex-shrink-0`}>
                             <span className={iconInfo.color}>{iconInfo.icon}</span>
                           </div>
-                              
-                          <div className="flex-1">
-                            <div className="flex justify-between items-start mb-1">
-                              <h3 className="font-medium text-gray-900 truncate max-w-[60%]">{transaction.remark || transaction.type_text}</h3>
-                              <span className={`font-medium ${isIncome ? 'text-green-600' : 'text-red-600'}`}>
+                               
+                          <div className="flex-1 min-w-0">
+                            <div className="flex justify-between items-start mb-1 w-full">
+                              <h3 className="font-medium text-gray-900 truncate flex-1 mr-3">
+                                {(transaction.remark || transaction.type_text).slice(0, 8)}{(transaction.remark || transaction.type_text).length > 8 ? '...' : ''}
+                              </h3>
+                              <span className={`font-medium ${isIncome ? 'text-green-600' : 'text-red-600'} flex-shrink-0 whitespace-nowrap`}>
                                 {isIncome ? '+' : '-'}{parseFloat(transaction.amount).toFixed(2)}
                               </span>
                             </div>
-                            <div className="flex justify-between items-center">
-                              <div className="text-xs ">
+                            <div className="flex justify-between items-center w-full">
+                              <div className="text-xs flex-shrink-0 whitespace-nowrap">
                                 {formatDate(date)} {time}
                               </div>
-                              <div className="text-xs ">
+                              <div className="text-xs flex-shrink-0 whitespace-nowrap">
                                 余额: {parseFloat(transaction.after_balance).toFixed(2)}
                               </div>
                             </div>

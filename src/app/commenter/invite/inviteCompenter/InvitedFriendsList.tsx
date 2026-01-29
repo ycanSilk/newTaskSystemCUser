@@ -58,19 +58,15 @@ const InvitedFriends: React.FC = () => {
         ) : inviteData?.success && inviteData.data?.list && inviteData.data.list.length > 0 ? (
           <div className="divide-y">
             {inviteData.data.list.map((user, index) => (
-              <div key={index} className="p-4 flex items-center justify-between">
+              <div key={index} className="p-3 flex items-center justify-between">
                 <div className="flex items-center">
-                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-medium">
-                    {user.username.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="ml-3">
-                    <div className="font-medium text-gray-800">{user.username}</div>
-                    <div className="text-sm text-gray-500">{user.email}</div>
+                  <div className="">
+                    <div className="font-medium text-gray-800">邀请用户：{user.username}</div>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-sm text-green-600">完成任务: {user.completed_tasks}</div>
-                  <div className="text-xs text-gray-400">{user.created_at}</div>
+                  <div className="text-sm text-green-600">完成任务数量: {user.completed_tasks}</div>
+                  <div className="text-xs text-gray-400">邀请时间: {user.created_at}</div>
                 </div>
               </div>
             ))}

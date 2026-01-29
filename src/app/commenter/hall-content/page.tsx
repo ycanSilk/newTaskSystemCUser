@@ -21,6 +21,9 @@ export default function CommenterHallContentPage() {
   const [currentPage, setCurrentPage] = useState(0); // 当前页码
   const [totalItems, setTotalItems] = useState(0); // 总任务数
   const [totalPages, setTotalPages] = useState(0); // 总页数
+  const [loadingMore, setLoadingMore] = useState(false); // 加载更多的状态
+  const [hasMore, setHasMore] = useState(true); // 是否还有更多数据
+  const itemsPerPage = 10;
   
   // 冷却计时器引用
   const coolingTimerRef = useRef<any>(null);
@@ -78,14 +81,18 @@ export default function CommenterHallContentPage() {
   
   // 从API获取待领取订单
   const fetchAvailableTasks = async (page: number = 0) => {
-    setIsLoading(true);
+    if (page === 0) {
+      setIsLoading(true);
+    } else {
+      setLoadingMore(true);
+    }
     setError(null);
     
     try {
       // 构建请求URL，使用GET方法，将参数作为查询字符串传递
       const url = new URL('/api/task/getTaskPoolList', window.location.origin);
       url.searchParams.append('page', page.toString());
-      url.searchParams.append('size', '10');
+      url.searchParams.append('size', '20');
       url.searchParams.append('sortField', sortBy === 'time' ? 'createTime' : 'unitPrice');
       url.searchParams.append('sortOrder', sortOrder.toUpperCase());
 
@@ -106,11 +113,23 @@ export default function CommenterHallContentPage() {
       if (responseData.success) {
         // 处理返回的任务数据
         const formattedTasks = responseData.data.list || [];
-        setTasks(formattedTasks);
-        setTotalItems(responseData.data.pagination.total || 0);
-        setTotalPages(responseData.data.pagination.total_pages || 0);
+        // 过滤掉title为"放大镜搜索词"的任务
+        const filteredTasks = formattedTasks.filter(task => task.title !== '放大镜搜索词');
+        
+        // 如果是第一页，替换任务列表；否则，追加任务
+        if (page === 0) {
+          setTasks(filteredTasks);
+        } else {
+          setTasks(prevTasks => [...prevTasks, ...filteredTasks]);
+        }
+        
+        setTotalItems(filteredTasks.length);
+        setTotalPages(Math.ceil(filteredTasks.length / 20)); // 每页20条
         setCurrentPage(page);
         setLastUpdated(new Date());
+        
+        // 更新是否还有更多数据
+        setHasMore(filteredTasks.length >= 20);
       } else {
         throw new Error(responseData.message || '获取任务列表失败');
       }
@@ -121,6 +140,7 @@ export default function CommenterHallContentPage() {
       showAlert('错误', errorMessage, 'error');
     } finally {
       setIsLoading(false);
+      setLoadingMore(false);
     }
   };
   
@@ -274,6 +294,34 @@ export default function CommenterHallContentPage() {
   useEffect(() => {
     fetchAvailableTasks(0);
   }, [sortBy, sortOrder]); // 当排序方式改变时重新获取数据
+
+  // 滚动懒加载
+  useEffect(() => {
+    const handleScroll = () => {
+      if (loadingMore || !hasMore || isLoading) return;
+      
+      const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+      const scrollHeight = document.documentElement.scrollHeight || document.body.scrollHeight;
+      const clientHeight = document.documentElement.clientHeight;
+      
+      // 当滚动到距离底部100px时加载更多
+      if (scrollTop + clientHeight >= scrollHeight - 100) {
+        loadMoreTasks();
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [loadingMore, hasMore, isLoading]);
+
+  // 加载更多任务
+  const loadMoreTasks = async () => {
+    if (currentPage < totalPages - 1 && !loadingMore) {
+      setLoadingMore(true);
+      await fetchAvailableTasks(currentPage + 1);
+      setLoadingMore(false);
+    }
+  };
  
   const sortedTasks = sortTasks(tasks, sortBy, sortOrder);
   
@@ -364,9 +412,6 @@ export default function CommenterHallContentPage() {
         {/* 加载状态显示 */}
         {isLoading && !error && (
           <div className="bg-white rounded-lg p-6 text-center">
-            <div className="animate-spin text-5xl mb-3">
-              <LoadingOutlined className="text-blue-500" />
-            </div>
             <h3 className="font-medium text-gray-800 mb-2">加载中</h3>
             <p className="text-gray-500 text-sm">正在获取任务列表，请稍候...</p>
           </div>
@@ -420,6 +465,20 @@ export default function CommenterHallContentPage() {
                 </button>
               </div>
             ))}
+            
+            {/* 加载更多指示器 */}
+            {loadingMore && (
+              <div className="bg-white rounded-lg p-4 text-center">
+                <p className="text-gray-500 text-sm">加载更多任务...</p>
+              </div>
+            )}
+            
+            {/* 没有更多数据提示 */}
+            {!loadingMore && !hasMore && sortedTasks.length > 0 && (
+              <div className="bg-white rounded-lg p-4 text-center">
+                <p className="text-gray-500 text-sm">没有更多任务了</p>
+              </div>
+            )}
           </div>
         )}
       </div>

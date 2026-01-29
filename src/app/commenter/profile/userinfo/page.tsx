@@ -126,29 +126,11 @@ export default function PersonalInfoPage() {
   
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* 页面顶部导航 */}
-      <div className="fixed top-0 left-0 right-0 bg-blue-500 text-white p-4 shadow-md z-50">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            {/* 返回按钮 */}
-            <button 
-              onClick={handleBack} 
-              className="text-white p-1 hover:bg-blue-600 rounded-full"
-              aria-label="返回"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            {/* 页面标题 */}
-            <h1 className="text-xl font-medium">个人信息</h1>
-          </div>
-        </div>
-      </div>
+     
       
       {/* 个人信息表单 */}
       {userProfile.id && (
-        <div className="mt-20 bg-white shadow-sm mx-4 rounded-lg overflow-hidden">
+        <div className="mt-5 bg-white shadow-sm mx-4 overflow-hidden">
           {/* 头像 */}
           <div className="p-4 border-b border-gray-100 flex justify-between items-center">
             <span className="text-gray-800">头像</span>

@@ -3,9 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { LoginFormData, LoginRequest, LoginApiResponse } from '../../../types/auth/loginTypes';
+// 导入useUser钩子
+import { useUser } from '@/hooks/useUser';
 
 
-const getCommenterHomePath = () => '/commenter/hall';
+const redirectPath = '/commenter/hall';
 // 表单验证规则
 const validationRules = {
   username: {
@@ -44,6 +46,8 @@ export default function CommenterLoginPage() {
   // const [showSuccessModal, setShowSuccessModal] = useState(false);
   // const [loginSuccessMessage, setLoginSuccessMessage] = useState('');
   const router = useRouter();
+  // 使用useUser钩子
+  const { saveUserOnLogin } = useUser();
 
   // 生成随机验证码
   function generateCaptcha(length = 4) {
@@ -209,18 +213,19 @@ export default function CommenterLoginPage() {
       
       // 无论响应状态如何，都先解析JSON响应
       const data: LoginApiResponse = await response.json();
-      console.log('登录响应数据:', data);
 
       // 检查登录是否成功（使用code字段判断）
       if (data.code === 0) {
         console.log('登录成功，完整响应数据:', data);
         
+        // 登录成功后保存用户信息
+        if (data.data) {
+          console.log('保存用户信息:', data.data);
+          saveUserOnLogin(data.data);
+        }
+        
         // 登录成功后1秒跳转到指定页面
         setTimeout(() => {
-          // 获取重定向参数
-          const urlParams = new URLSearchParams(window.location.search);
-          const redirectPath = urlParams.get('redirect') || getCommenterHomePath();
-          console.log(`登录成功，跳转到 ${redirectPath}`);
           router.push(redirectPath);
         }, 1000);
 
@@ -298,7 +303,7 @@ export default function CommenterLoginPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                    className={`absolute right-2 top-1/2 transform -translate-y-1/2 focus:outline-none ${showPassword ? 'bg-blue-100 text-blue-600 p-1 rounded-full' : 'text-gray-500 hover:text-gray-700'}`}
                     aria-label={showPassword ? "隐藏密码" : "显示密码"}
                   >
                     <svg
@@ -313,7 +318,7 @@ export default function CommenterLoginPage() {
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           strokeWidth={2}
-                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878l3.125-3.125M8.25 3a10.05 10.05 0 00-7.5 11.227m13.5-4.073a10.05 10.05 0 01-7.5-11.227M8.25 3a11.94 11.94 0 015.547 2.912" 
                         />
                       ) : (
                         <path

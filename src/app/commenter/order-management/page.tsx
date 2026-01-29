@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { PhoneOutlined } from '@ant-design/icons';
-import EncryptedLink from '@/components/layout/EncryptedLink';
 
 // 定义订单状态类型
 type OrderStatus = '进行中' | '待审核' | '已完成' | '异常订单';
@@ -488,7 +488,7 @@ const OrderManagementPage = () => {
       {/* 订单列表 */}
       <div className="space-y-4 mb-2 p-3">
         {filteredOrders.map((order) => (
-          <EncryptedLink href={`/commenter/order-management/${order.id}`} key={order.id}>
+          <Link href={`/commenter/order-management/${order.id}`} key={order.id}>
             <div className="bg-white rounded-lg p-4 shadow-sm transition-all hover:shadow-md cursor-pointer mb-3">
               {/* 订单头部信息 */}
               <div className="flex justify-between items-center pb-2 border-b border-gray-500">
@@ -563,7 +563,7 @@ const OrderManagementPage = () => {
                 </button>
               </div>
             </div>
-          </EncryptedLink>
+          </Link>
         ))}
 
         {/* 加载状态 */}

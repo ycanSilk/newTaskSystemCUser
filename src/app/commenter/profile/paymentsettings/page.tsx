@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
-import { ArrowLeftOutlined, RightOutlined } from '@ant-design/icons';
-import EncryptedLink from '@/components/layout/EncryptedLink';
+import { RightOutlined } from '@ant-design/icons';
+import Link from 'next/link';
 
 const PaymentSettingsPage: React.FC = () => {
   // 支付设置菜单项数据
@@ -25,16 +25,6 @@ const PaymentSettingsPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* 顶部导航栏 */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="px-4 py-3 flex items-center">
-          <button className="mr-4 p-1 rounded-full hover:bg-gray-100">
-            <ArrowLeftOutlined className="w-5 h-5 text-gray-700" />
-          </button>
-          <h1 className="text-lg font-medium text-gray-900">支付设置</h1>
-        </div>
-      </header>
-
       {/* 主要内容区域 */}
       <main className="p-4">
         <div className="space-y-1">
@@ -43,7 +33,7 @@ const PaymentSettingsPage: React.FC = () => {
               key={item.id}
               className="bg-white rounded-lg overflow-hidden shadow-sm border border-gray-100"
             >
-              <EncryptedLink 
+              <Link 
                 href={
                   item.id === 'bind-alipay' ? '/commenter/profile/paymentsettings/bindalipay' :
                   item.id === 'change-payment-password' ? '/commenter/profile/paymentsettings/changepaymentpwd' :
@@ -59,7 +49,7 @@ const PaymentSettingsPage: React.FC = () => {
                     <RightOutlined className="w-4 h-4 text-gray-400 ml-1" />
                   )}
                 </button>
-              </EncryptedLink>
+              </Link>
             </div>
           ))}
         </div>

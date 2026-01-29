@@ -119,19 +119,19 @@ const InviteFriend: React.FC<InviteFriendProps> = ({ setError }) => {
         </h3>
         <div className="grid grid-cols-4 gap-4 text-center">
           <div className="bg-blue-100 rounded-xl p-2">
-            <div className="text-2xl font-bold text-blue-600">{inviteData?.total_invites || 0}</div>
+            <div className="text-xl font-bold text-blue-600">{inviteData?.total_invites || 0}</div>
             <div className="text-sm">累计邀请</div>
           </div>
           <div className="bg-blue-100 rounded-xl p-2 ">
-            <div className="text-2xl font-bold text-green-600">{inviteData?.valid_invites || 0}</div>
+            <div className="text-xl font-bold text-green-600">{inviteData?.valid_invites || 0}</div>
             <div className="text-sm ">活跃用户</div>
           </div>
           <div className="bg-blue-100 rounded-xl p-2 ">
-            <div className="text-2xl font-bold text-orange-600">{inviteData?.total_tasks_completed || 0}</div>
+            <div className="text-xl font-bold text-orange-600">{inviteData?.total_tasks_completed || 0}</div>
             <div className="text-sm ">累计完成任务</div>
           </div>
           <div className="bg-blue-100 rounded-xl p-2 ">
-            <div className="text-2xl font-bold text-orange-600">{inviteData?.total_commission_earned || 0}</div>
+            <div className="text-xl font-bold text-orange-600">{inviteData?.total_commission_earned || 0}</div>
             <div className="text-sm ">累计佣金</div>
           </div>
         </div>

@@ -199,7 +199,7 @@ const RentalOfferPage = () => {
     }
 
     return filteredOffers.map((offer) => (
-      <Link href={`/accountrental/my-account-rental/rentaloffer/rentaloffer-detail/${offer.id}`} key={offer.id}>
+      <Link href={`/rental/my/myrelearentalinfo/detail/${offer.id}`} key={offer.id}>
         <Card className="border-0 rounded-none mb-3 cursor-pointer hover:shadow-md transition-shadow">
           {/* 出租头部信息 */}
           <div className="flex items-center justify-between mb-2">

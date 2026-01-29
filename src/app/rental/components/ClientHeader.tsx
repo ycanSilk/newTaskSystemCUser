@@ -25,8 +25,8 @@ export default function TopNavigationBar({ user }: TopNavigationBarProps) {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
-  // 使用useUserStore获取用户信息，包括unread_count
-  const { currentUser, unread_count } = useUserStore();
+  // 使用useUserStore获取用户信息
+  const { currentUser } = useUserStore();
   const userWithUnreadCount = currentUser;
 
   // 获取实际路径（处理加密路由）

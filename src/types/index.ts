@@ -38,6 +38,7 @@ export interface User {
     totalEarnings?: number;
     level?: string;  // stats中也可能包含level
   };
+  is_agent?:string; // 是否是代理
 }
 
 // 任务相关

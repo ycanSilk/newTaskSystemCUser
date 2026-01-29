@@ -9,13 +9,24 @@ import { BellOutlined } from '@ant-design/icons';
 // 导入useUser钩子
 import { useUser } from '@/hooks/useUser';
 
-// 导入路由配置
-import { 
-  flatRouteTitleMap, 
-  firstLevelPages, 
-  routeHierarchyMap, 
-  dynamicRoutePatterns 
-} from '../config/routes';
+// 定义路由表，映射路径到标题
+const routeTitleMap: Record<string, string> = {
+  '/commenter/hall': '评论抢单',
+  '/commenter/tasks': '评论进行',
+  '/commenter/invite': '邀请分佣',
+  '/commenter/profile': '个人中心',
+  '/commenter/profile/userinfo': '个人信息',
+  '/commenter/profile/paymentsettings': '支付设置',
+  '/commenter/notification': '通知提醒',
+  '/commenter/customer-service': '联系客服',
+  '/commenter/balance': '账户余额',
+  '/commenter/withdrawal/withdrawalList': '提现明细',
+  '/commenter/earnings/overview': '收益概览',
+  '/commenter/earnings/order-earnings': '订单收益',
+  '/commenter/earnings/withdraw': '提现管理',
+  '/commenter/douyin-version': '抖音版本下载'
+  // 可以根据需要添加更多路由
+};
 
 interface TopNavigationBarProps {
   user: any | null;
@@ -24,7 +35,6 @@ interface TopNavigationBarProps {
 export default function TopNavigationBar({ user }: TopNavigationBarProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const [pageTitle, setPageTitle] = useState('接单中心');
   const [isClient, setIsClient] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -50,108 +60,55 @@ export default function TopNavigationBar({ user }: TopNavigationBarProps) {
 
   useEffect(() => {
     setIsClient(true);
-    if (pathname) {
-      updatePageTitle(pathname);
-    }
-  }, [pathname]);
+  }, []);
 
-  // 更新页面标题
-  const updatePageTitle = (currentPath: string) => {
+  // 获取当前路径的标题
+  const getCurrentTitle = () => {
+    // 移除查询参数，只匹配路径部分
+    const pathWithoutQuery = pathname.split('?')[0];
     
-    // 尝试精确匹配
-    if (flatRouteTitleMap[currentPath]) {
-      setPageTitle(flatRouteTitleMap[currentPath]);
-      return;
+    // 精确匹配
+    if (routeTitleMap[pathWithoutQuery]) {
+      return routeTitleMap[pathWithoutQuery];
     }
-
-    // 尝试匹配动态路由模式
-    for (const pattern of dynamicRoutePatterns) {
-      const pathWithoutSlash = currentPath.startsWith('/') ? currentPath.slice(1) : currentPath;
-      if (pattern.pattern.test(pathWithoutSlash)) {
-        const targetPath = pattern.target;
-        if (flatRouteTitleMap[targetPath]) {
-          setPageTitle(flatRouteTitleMap[targetPath]);
-          return;
-        }
+    
+    // 尝试匹配父路径
+    const pathParts = pathWithoutQuery.split('/').filter(Boolean);
+    for (let i = pathParts.length; i > 0; i--) {
+      const parentPath = '/' + pathParts.slice(0, i).join('/');
+      if (routeTitleMap[parentPath]) {
+        return routeTitleMap[parentPath];
       }
     }
-
-    // 尝试基于路径段进行匹配
-    const pathParts = currentPath.split('/').filter(Boolean);
     
-    // 优先匹配更长的路由模式
-    const sortedRoutes = Object.entries(flatRouteTitleMap).sort(([a], [b]) => b.length - a.length);
-    
-    for (const [route, title] of sortedRoutes) {
-      // 处理动态路由的特殊逻辑
-      if (route.includes('[id]')) {
-        // 创建动态路由的正则表达式模式
-        const dynamicRoutePattern = route.replace(/\[id\]/g, '(\\d+)');
-        const regexPattern = new RegExp(`^${dynamicRoutePattern}$`);
-        
-        if (regexPattern.test(currentPath)) {
-          setPageTitle(title);
-          return;
-        }
-      } else {
-        // 对于非动态路由，检查路径是否以该路由开头
-        if (currentPath.startsWith(route) && 
-            (currentPath.length === route.length || currentPath[route.length] === '/')) {
-          setPageTitle(title);
-          return;
-        }
-      }
-    }
-
     // 默认标题
-    setPageTitle('接单中心');
+    return '接单中心';
   };
 
   // 处理返回按钮点击事件
   const handleBack = () => {
-    if (!pathname) return;
-
-    // 检查当前页面是否为一级页面
-    if (firstLevelPages.includes(pathname)) {
-      // 如果是一级页面，返回接单中心主页
-      router.push('/commenter');
-      return;
-    }
-
-    // 检查是否在路由层级映射中定义了返回路径
-    if (routeHierarchyMap[pathname]) {
-      router.push(routeHierarchyMap[pathname]);
-      return;
-    }
-
-    // 尝试匹配动态路由模式
-    const pathWithoutSlash = pathname.startsWith('/') ? pathname.slice(1) : pathname;
-    for (const pattern of dynamicRoutePatterns) {
-      if (pattern.pattern.test(pathWithoutSlash)) {
-        router.push(pattern.target);
-        return;
-      }
-    }
-
-    // 提取上一级路由路径
-    const pathParts = pathname.split('/').filter(Boolean);
-    if (pathParts.length > 0) {
-      // 检查是否为commenter模块的多层级路径
-      if (pathParts[0] === 'commenter' && pathParts.length > 1) {
-        // 尝试返回到上一级路由
-        const parentPath = '/' + pathParts.slice(0, -1).join('/');
-        router.push(parentPath);
-        return;
-      }
-    }
-
-    // 默认返回接单中心主页
-    router.push('/commenter');
+    // 使用浏览器级别的history.back()
+    window.history.back();
   };
 
   // 检查是否显示返回按钮
   const shouldShowBackButton = () => {
-    return pathname !== '/commenter';
+    // 默认显示返回按钮，只有特殊路由隐藏
+    const specialRoutes = [
+      '/commenter/hall',
+      '/commenter/tasks',
+      '/commenter/invite',
+      '/commenter/profile'
+    ];
+    
+    // 检查是否为特殊路由
+    for (const route of specialRoutes) {
+      if (pathname === route || pathname.startsWith(route + '?')) {
+        return false;
+      }
+    }
+    
+    return true;
   };
 
   const handleLogout = async () => {
@@ -203,7 +160,7 @@ export default function TopNavigationBar({ user }: TopNavigationBarProps) {
   return (
     <div className="fixed top-0 left-0 right-0 z-50 bg-blue-500 text-white px-4 py-3 flex items-center justify-between shadow-md">
       <div className="flex items-center space-x-2">
-       {/* {shouldShowBackButton() && (
+        {shouldShowBackButton() && (
           <button 
             onClick={handleBack} 
             className="text-white p-1 hover:bg-blue-600 rounded-full"
@@ -214,9 +171,9 @@ export default function TopNavigationBar({ user }: TopNavigationBarProps) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-        )}*/}
+        )}
         <div className="flex items-center space-x-1">
-          {isClient && <span className="text-xl font-medium">{pageTitle}</span>}
+          {isClient && <span className="text-xl font-medium">{getCurrentTitle()}</span>}
         </div>
       </div>
       <div className="flex items-center space-x-3" ref={dropdownRef}>

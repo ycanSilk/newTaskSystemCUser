@@ -16,8 +16,8 @@ const WorkOrderDetailPage = () => {
   const params = useParams();
   const router = useRouter();
   
-  // 获取当前登录用户信息和方法
-  const { currentUser, fetchUser } = useUserStore();
+  // 获取当前登录用户信息
+  const { currentUser } = useUserStore();
   
   // 从路由参数和查询参数中获取数据
   const ticketIdFromPath = params.id as string;
@@ -68,12 +68,7 @@ const WorkOrderDetailPage = () => {
     }
   };
   
-  // 获取用户信息
-  useEffect(() => {
-    console.log('=== 获取用户信息 ===');
-    // 调用fetchUser确保currentUser有值
-    fetchUser();
-  }, []);
+  // 用户信息已从localStorage获取，无需额外调用
   
   // 页面加载时获取工单详情
   useEffect(() => {

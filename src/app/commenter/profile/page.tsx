@@ -23,20 +23,28 @@ export default function commenterProfilePage() {
   const [balance, setBalance] = useState<BalanceData>({ balance: 0 });
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   // 从store获取用户信息
-  const { currentUser, fetchUser, isLoading } = useUserStore();
-
-  // 组件挂载时，确保用户信息已加载
+  const { currentUser, isLoading, setUser } = useUserStore();
+  
+  // 从localStorage获取用户信息并更新到store
   useEffect(() => {
     if (!currentUser) {
-      fetchUser();
+      const storedUser = localStorage.getItem('commenter-user-storage');
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          console.log("从localStorage读取用户信息:", parsedUser.currentUser);
+          if (parsedUser.currentUser) {
+            setUser(parsedUser.currentUser);
+          }
+        } catch (error) {
+          console.error("解析localStorage用户信息失败:", error);
+        }
+      }
     }
-  }, [currentUser, fetchUser]);
-
+  }, [currentUser, setUser]);
+  
+  console.log("读取到的用户信息", currentUser)
   useEffect(() => {
-    // 模拟数据加载
-    setTimeout(() => {
-      setBalance({ balance: 1298 });
-    }, 500);
     
     // 从localStorage读取未读通知状态
     const savedUnreadStatus = localStorage.getItem('notificationReadStatus');
@@ -54,7 +62,7 @@ export default function commenterProfilePage() {
         const unreadCount = Object.values(readStatus).filter(isRead => !isRead).length;
         setUnreadNotificationCount(unreadCount);
       }
-    }, 5000); // 每5秒检查一次
+    }, 360000); // 每1小时检查一次
     
     return () => clearInterval(interval);
   }, []);
@@ -75,27 +83,6 @@ export default function commenterProfilePage() {
       color: 'bg-yellow-100',
       path: '/commenter/withdrawal/withdrawalList'
     },
-    /*{
-      id: 'order-management',
-      title: '订单管理',
-      icon: <OrderedListOutlined className="text-xl" />,
-      color: 'bg-green-100',
-      path: '/commenter/order-management'
-    },*/
-   /* {
-      id: 'data-stats',
-      title: '收益统计',
-      icon: <BarChartOutlined className="text-xl" />,
-      color: 'bg-blue-100',
-      path: '/commenter/earnings'
-    },
-    {
-      id: 'bankcards',
-      title: '银行卡管理',
-      icon: <BarChartOutlined className="text-xl" />,
-      color: 'bg-blue-100',
-      path: '/commenter/bank-cards'
-    },*/
     { 
       id: 'paymentsettings',
       title: '支付设置',      

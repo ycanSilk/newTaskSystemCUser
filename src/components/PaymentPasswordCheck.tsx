@@ -8,7 +8,7 @@ import { CheckWalletPwdResponse } from '../app/types/paymentWallet/checkWalletPw
 const PaymentPasswordCheck = () => {
   const router = useRouter();
   const pathname = usePathname();
-  const { currentUser, fetchUser } = useUserStore();
+  const { currentUser } = useUserStore();
   
   // 支付密码校验状态
   const [isChecking, setIsChecking] = useState(false);
@@ -97,18 +97,14 @@ const PaymentPasswordCheck = () => {
     // 延迟检查，确保页面完全加载
     const timer = setTimeout(() => {
       console.log('useEffect触发，检查支付密码');
-      // 如果还没有用户信息，先获取用户信息
-      if (!currentUser) {
-        console.log('没有用户信息，调用fetchUser');
-        fetchUser();
-      } else {
-        // 有用户信息时，检查支付密码
+      // 有用户信息时，检查支付密码
+      if (currentUser) {
         checkWalletPassword();
       }
     }, 500);
     
     return () => clearTimeout(timer);
-  }, [currentUser, pathname, fetchUser]);
+  }, [currentUser, pathname]);
   
   // 当组件重新挂载时，重置检查状态，确保每次页面加载都能重新检查
   useEffect(() => {

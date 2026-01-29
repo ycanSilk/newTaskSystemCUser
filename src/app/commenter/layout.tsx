@@ -37,7 +37,7 @@ export default function CommenterLayout({
   // 对于其他页面，渲染完整布局（头部、内容、底部导航）
   // 使用AuthGuard组件保护所有非认证页面
   return (
-    <AuthGuard requiredRole="commenter">
+    <AuthGuard>
       <div className="min-h-screen bg-gray-50 pt-16">
         {/* 顶部导航栏 */}
         <TopNavigationBar user={user} />
