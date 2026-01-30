@@ -208,9 +208,7 @@ export default function CommenterLoginPage() {
         credentials: 'include' // 允许浏览器处理认证Cookie
       });
       
-      const responseTime = Date.now() - startTime;
-      setResponseTime(responseTime);
-      
+    
       // 无论响应状态如何，都先解析JSON响应
       const data: LoginApiResponse = await response.json();
 

@@ -21,26 +21,25 @@ export async function middleware(request: NextRequest) {
 
   console.log('Middleware: 处理请求路径:', pathname);
 
-  // 如果是公共路径，直接放行
+  /*// 如果是公共路径，直接放行
   if (publicPaths.includes(pathname)) {
     console.log('Middleware: 公共路径，直接放行');
     return NextResponse.next();
-  }
+  }*/
 
   // 从Cookie中获取Token
-  const token = request.cookies.get('Commenter_token')?.value;
+  //const token = request.cookies.get('Commenter_token')?.value;
 
   // 如果没有Token，说明用户未登录，重定向到登录页
-  if (!token) {
+  /*if (!token) {
     console.log('Middleware: 没有Token，重定向到登录页');
     const loginPath = '/commenter/auth/login';
     const loginUrl = new URL(loginPath, origin);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
-  }
+  }*/
 
   // 简化处理：有Token就直接放行，不进行校验
-  console.log('Middleware: 有Token，直接放行');
   return NextResponse.next();
 }
 

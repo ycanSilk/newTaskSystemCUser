@@ -93,7 +93,6 @@ const ProgressTasksTab: React.FC<ProgressTasksTabProps> = ({
     
     // 添加轮询功能，每10分钟检测一次任务状态变化
     const pollingInterval = setInterval(fetchTasks, 10 * 60 * 1000);
-    
     // 组件卸载时清除定时器
     return () => clearInterval(pollingInterval);
   }, [setModalMessage, setShowModal, sortField, sortOrder]);
@@ -143,41 +142,32 @@ const ProgressTasksTab: React.FC<ProgressTasksTabProps> = ({
   const handleOpenVideoModal = async (videoUrl: string, comment?: string) => {
     console.log('传入的url', videoUrl);
     // 打开新标签页跳转到指定URL
-    const newWindow = window.open(videoUrl, '_blank');
+    const defaultUrl='https://www.douyin.com/'
+    const newWindow = window.open(defaultUrl, '_blank');
     
     if (newWindow) {
       console.log('新标签页已打开');
       newWindow.focus();
     }
 
-    // 复制URL到剪贴板，兼容PC端和手机端
+    // 简单复制URL到剪贴板
     try {
-      if (navigator.clipboard && window.isSecureContext) {
-        // 使用现代的Clipboard API
-        await navigator.clipboard.writeText(videoUrl);
-        console.log('URL已复制到剪贴板');
-      } else {
-        // 使用传统方法兼容旧浏览器和非安全上下文
-        const textArea = document.createElement('textarea');
-        textArea.value = videoUrl;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-999999px';
-        textArea.style.top = '-999999px';
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        
-        try {
-          document.execCommand('copy');
-          console.log('URL已复制到剪贴板');
-        } catch (error) {
-          console.error('复制失败:', error);
-        } finally {
-          document.body.removeChild(textArea);
-        }
-      }
+      const copyUrl = await navigator.clipboard.writeText(videoUrl);
+      console.log('URL已复制到剪贴板', videoUrl);
     } catch (error) {
       console.error('复制到剪贴板失败:', error);
+    }
+  };
+
+  // 打开评论链接按钮跳转函数
+  const handleOpenCommentLink = async (commentUrl: string) => {
+    console.log('打开评论链接:', commentUrl);
+    if (commentUrl) {
+      const newWindow = window.open(commentUrl, '_blank');
+      if (newWindow) {
+        console.log('评论链接已打开');
+        newWindow.focus();
+      }
     }
   };
   
@@ -304,52 +294,6 @@ const ProgressTasksTab: React.FC<ProgressTasksTabProps> = ({
           <div className=" mb-2">
             <h3 className="">
               任务标题：{task.template_title}
-            {/*  <button 
-                className="ml-2 text-blue-500 hover:text-blue-700 transition-colors"
-                onClick={() => {
-                  const taskIdToCopy = task.id;
-                  
-                  // 检查navigator.clipboard是否可用
-                  if (!navigator.clipboard) {
-                    // 如果clipboard API不可用，使用传统的复制方法
-                    const textArea = document.createElement('textarea');
-                    textArea.value = taskIdToCopy;
-                    textArea.style.position = 'fixed';
-                    textArea.style.opacity = '0';
-                    document.body.appendChild(textArea);
-                    textArea.select();
-                    
-                    try {
-                      document.execCommand('copy');
-                      setModalMessage('任务ID已复制到剪贴板');
-                      setShowModal(true);
-                    } catch (err) {
-                      console.error('复制失败:', err);
-                      setModalMessage('复制失败，请手动复制');
-                      setShowModal(true);
-                    } finally {
-                      document.body.removeChild(textArea);
-                    }
-                    return;
-                  }
-                  
-                  // 如果clipboard API可用，使用它
-                  navigator.clipboard.writeText(taskIdToCopy).then(() => {
-                    // 使用模态框显示复制成功提示
-                    setModalMessage('任务ID已复制到剪贴板');
-                    setShowModal(true);
-                  }).catch(err => {
-                    console.error('复制失败:', err);
-                    setModalMessage('复制失败，请手动复制');
-                    setShowModal(true);
-                  });
-                }}
-              >
-                <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-                <span className="text-xs inline-block">复制任务ID</span>
-              </button>*/}
             </h3>
             <p>任务ID：{task.b_task_id}</p>
           </div>
@@ -381,9 +325,12 @@ const ProgressTasksTab: React.FC<ProgressTasksTabProps> = ({
             <h4 className="text-sm font-medium text-blue-700"><EditOutlined className="inline-block mr-1" /> 推荐评论</h4>
             <button
                 className="text-xs bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-500 transition-colors"
-                onClick={() => handleCopyComment && handleCopyComment(task.id, (task.recommend_mark?.comment || ''))}
+                onClick={() => {
+                  navigator.clipboard.writeText(task.recommend_mark?.comment || '');
+                  console.log('评论已复制到剪贴板', task.recommend_mark?.comment || '');
+                }}
               >
-                <CopyOutlined className="inline-block mr-1" /> 复制评论
+                 复制评论
               </button>
           </div>
           <p className="text-sm text-black bg-white p-3 rounded border border-blue-100 overflow-hidden text-ellipsis whitespace-normal max-h-[72px] line-clamp-3">
@@ -420,8 +367,9 @@ const ProgressTasksTab: React.FC<ProgressTasksTabProps> = ({
         <button
             className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
             onClick={async () => {
-              if (task.video_url) {
-                await handleOpenVideoModal(task.video_url);
+              const commentUrl = reviewLinks[task.id] || task.comment_url || '';
+              if (commentUrl) {
+                await handleOpenCommentLink(commentUrl);
               }
             }}
         >
