@@ -92,25 +92,26 @@ const PaymentPasswordCheck = () => {
     setShowPasswordModal(false);
   };
   
-  // 当用户信息变化、路径变化或页面重新加载时，检查支付密码
+  // 取消支付密码检查 - 注释掉检查逻辑
   useEffect(() => {
-    // 延迟检查，确保页面完全加载
-    const timer = setTimeout(() => {
-      console.log('useEffect触发，检查支付密码');
-      // 有用户信息时，检查支付密码
-      if (currentUser) {
-        checkWalletPassword();
-      }
-    }, 500);
+    console.log('支付密码检查已禁用');
+    // 以下代码已禁用，不再检查支付密码
+    /*
+    // 检查URL参数中是否有checkPaymentPassword=true
+    const urlParams = new URLSearchParams(window.location.search);
+    const shouldCheck = urlParams.get('checkPaymentPassword') === 'true';
     
-    return () => clearTimeout(timer);
-  }, [currentUser, pathname]);
-  
-  // 当组件重新挂载时，重置检查状态，确保每次页面加载都能重新检查
-  useEffect(() => {
-    console.log('组件重新挂载，重置检查状态');
-    // 重置状态，确保每次页面加载都能重新检查
-  }, []);
+    if (shouldCheck && currentUser) {
+      console.log('登录成功后检查支付密码');
+      checkWalletPassword();
+      
+      // 移除URL参数，避免重复检查
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('checkPaymentPassword');
+      window.history.replaceState({}, '', newUrl.toString());
+    }
+    */
+  }, [currentUser]);
   
   // 渲染模态框
   return (

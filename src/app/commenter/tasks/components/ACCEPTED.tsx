@@ -29,6 +29,7 @@ interface ProgressTasksTabProps {
   uploadStatus?: Record<string, 'compressing' | 'uploading' | 'success' | 'error'>;
 }
 
+
 const ProgressTasksTab: React.FC<ProgressTasksTabProps> = ({
   handleViewImage,
   setModalMessage,
@@ -54,10 +55,15 @@ const ProgressTasksTab: React.FC<ProgressTasksTabProps> = ({
       setErrorMessage(null);
       
       try {
-        // 调用API，传入status=1
+        // 调用API，传入status=1，添加cache-control头防止浏览器缓存
         const response = await fetch('/api/task/getMyAccepedTaskList?status=1', {
           method: 'GET',
-          credentials: 'include'
+          credentials: 'include',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }
         });
         
         const responseData: GetMyAcceptedTaskListResponse = await response.json();
@@ -84,6 +90,12 @@ const ProgressTasksTab: React.FC<ProgressTasksTabProps> = ({
     };
     
     fetchTasks();
+    
+    // 添加轮询功能，每10分钟检测一次任务状态变化
+    const pollingInterval = setInterval(fetchTasks, 10 * 60 * 1000);
+    
+    // 组件卸载时清除定时器
+    return () => clearInterval(pollingInterval);
   }, [setModalMessage, setShowModal, sortField, sortOrder]);
   
   // 任务排序函数
@@ -124,6 +136,48 @@ const ProgressTasksTab: React.FC<ProgressTasksTabProps> = ({
         delete newErrors[taskId];
         return newErrors;
       });
+    }
+  };
+
+  //打开视频按钮跳转函数
+  const handleOpenVideoModal = async (videoUrl: string, comment?: string) => {
+    console.log('传入的url', videoUrl);
+    // 打开新标签页跳转到指定URL
+    const newWindow = window.open(videoUrl, '_blank');
+    
+    if (newWindow) {
+      console.log('新标签页已打开');
+      newWindow.focus();
+    }
+
+    // 复制URL到剪贴板，兼容PC端和手机端
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        // 使用现代的Clipboard API
+        await navigator.clipboard.writeText(videoUrl);
+        console.log('URL已复制到剪贴板');
+      } else {
+        // 使用传统方法兼容旧浏览器和非安全上下文
+        const textArea = document.createElement('textarea');
+        textArea.value = videoUrl;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
+        try {
+          document.execCommand('copy');
+          console.log('URL已复制到剪贴板');
+        } catch (error) {
+          console.error('复制失败:', error);
+        } finally {
+          document.body.removeChild(textArea);
+        }
+      }
+    } catch (error) {
+      console.error('复制到剪贴板失败:', error);
     }
   };
   
@@ -247,10 +301,10 @@ const ProgressTasksTab: React.FC<ProgressTasksTabProps> = ({
         <div key={task.id || 'unknown'} className="rounded-lg p-4 mb-4 shadow-sm transition-all hover:shadow-md bg-white">
           {/* 添加任务操作按钮组 */}
           
-          <div className="flex justify-between items-start mb-2">
-            <h3 className="text-sm text-black inline-block flex items-center">
+          <div className=" mb-2">
+            <h3 className="">
               任务标题：{task.template_title}
-              <button 
+            {/*  <button 
                 className="ml-2 text-blue-500 hover:text-blue-700 transition-colors"
                 onClick={() => {
                   const taskIdToCopy = task.id;
@@ -295,8 +349,9 @@ const ProgressTasksTab: React.FC<ProgressTasksTabProps> = ({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                 </svg>
                 <span className="text-xs inline-block">复制任务ID</span>
-              </button>
+              </button>*/}
             </h3>
+            <p>任务ID：{task.b_task_id}</p>
           </div>
            
           {/* 价格和任务信息区域 - 显示单价、任务状态和发布时间 */}
@@ -338,22 +393,16 @@ const ProgressTasksTab: React.FC<ProgressTasksTabProps> = ({
       
       <div className="mb-2 bg-blue-50 border border-blue-500 py-2 px-3 rounded-lg">
           <p className='mb-1  text-sm text-blue-600'>任务视频点击进入：</p>
-          <a 
-            href={task.video_url} 
-            target="_blank" 
-            rel="noopener noreferrer" 
+          <button 
             className="bg-blue-600 text-white px-3 py-1.5 rounded-md text-sm  inline-flex items-center"
-            onClick={async (e) => {
-              e.preventDefault();
-              // 复制video_url字段的值
-              await handleCopyComment?.(task.id, task.video_url || '');
-              // 设置当前视频URL并打开模态框，使用video_url字段
-              setCurrentVideoUrl(task.video_url);
-              setIsModalOpen(true);
+            onClick={async () => {
+              if (task.video_url) {
+                await handleOpenVideoModal(task.video_url, task.recommend_mark?.comment);
+              }
             }}
           >
              打开视频
-          </a>
+          </button>
       </div>    
 
       {/* 评论链接输入框 - 新增 */}
@@ -370,20 +419,13 @@ const ProgressTasksTab: React.FC<ProgressTasksTabProps> = ({
         />
         <button
             className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-            onClick={() => {
-              const url = reviewLinks[task.id] || task.comment_url;
-              if (url && task.id) {
-                // 保存当前视频URL和评论
-                setCurrentVideoUrl(url);
-                setCurrentComment(task.comment_url || '');
-                // 复制comment_url字段的值
-                handleCopyComment?.(task.id, task.comment_url || '');
-                // 打开模态框
-                setIsModalOpen(true);
+            onClick={async () => {
+              if (task.video_url) {
+                await handleOpenVideoModal(task.video_url);
               }
             }}
         >
-          打开视频
+          打开链接
         </button>
       </div>
 
@@ -436,8 +478,8 @@ const ProgressTasksTab: React.FC<ProgressTasksTabProps> = ({
         </div>
       ))}
 
-      {/* 打开视频确认模态框 */}
-      {isModalOpen && (
+      {/* 打开视频确认模态框 - 已注释掉 */}
+      {/* {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-sm">
             <h3 className="text-lg font-medium mb-4">提示</h3>
@@ -463,7 +505,7 @@ const ProgressTasksTab: React.FC<ProgressTasksTabProps> = ({
             </div>
           </div>
         </div>
-      )}
+      )} */}
 
     </div>
   );

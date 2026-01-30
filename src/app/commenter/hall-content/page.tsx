@@ -333,9 +333,9 @@ export default function CommenterHallContentPage() {
         onCoolingStart={handleCoolingStart}
         onCoolingEnd={handleCoolingEnd}/>
       {/* 排序功能按钮 */}
-      <div className="bg-white mx-4 rounded-lg shadow-sm p-4">
+      <div className=" mx-4 rounded-lg shadow-sm p-4">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-bold text-gray-800">任务排序</h3>
+          <h3 className="font-bold text-2xl text-gray-800">任务大厅</h3>
         </div>
         
         <div className="flex space-x-2">
@@ -349,11 +349,8 @@ export default function CommenterHallContentPage() {
                 setSortOrder('desc');
               }
             }}
-            className={`flex items-center space-x-1 px-3 py-2 rounded-lg text-sm ${sortBy === 'time' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'}`}
+            className={`flex items-center space-x-1 px-3 py-2 rounded-lg text-xs ${sortBy === 'time' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'}`}
           >
-            <span>
-                <ClockCircleOutlined className="" />
-              </span>
             <span>发布时间</span>
             {sortBy === 'time' && (
               <span>{sortOrder === 'desc' ? '↓' : '↑'}</span>
@@ -370,11 +367,8 @@ export default function CommenterHallContentPage() {
                 setSortOrder('desc');
               }
             }}
-            className={`flex items-center space-x-1 px-3 py-2 rounded-lg text-sm ${sortBy === 'price' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'}`}
+            className={`flex items-center space-x-1 px-3 py-2 rounded-lg text-xs ${sortBy === 'price' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'}`}
           >
-            <span>
-                <DollarOutlined className="" />
-              </span>
             <span>单价</span>
             {sortBy === 'price' && (
               <span>{sortOrder === 'desc' ? '↓' : '↑'}</span>
@@ -385,13 +379,6 @@ export default function CommenterHallContentPage() {
 
       {/* 任务列表 */}
       <div className="mx-4 mt-3">
-        <div className="flex items-center justify-between mb-4">
-          <span className="font-bold text-gray-800">全部任务 ({error ? '加载失败' : isLoading ? '加载中...' : totalItems})</span>
-          <div className="text-xs text-gray-500">
-            最后更新: {lastUpdated.toLocaleTimeString()}
-          </div>
-        </div>
-
         {/* 错误状态显示 */}
         {error && !isLoading && (
           <div className="bg-white rounded-lg p-6 text-center">
@@ -440,21 +427,9 @@ export default function CommenterHallContentPage() {
                   <div>
                     <h3 className="font-bold">任务标题：{task.title}</h3>
                     <div>订单号：{task.id}</div>
-                    <div className="flex gap-2 mt-1">
-                      {task.status === 1 && (
-                        <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded inline-block">
-                          有效
-                        </span>
-                      )}
-                    </div>
+                    <div> 到期时间：{task.deadline_text}</div>
+                    <div className="">奖励金额：<span className='text-xl text-red-500 font-bold'>{task.commission}</span></div>
                   </div>
-                  <span className="text-xs  text-gray-600 px-2 py-1">
-                    到期时间：{task.deadline_text}
-                  </span>
-                </div>
-                
-                <div className="flex justify-between items-center mb-3">
-                  <div className="text-2xl font-bold text-orange-500">¥{task.commission||'0.00'}</div>
                 </div>
                 <button 
                   className={`w-full py-3 rounded-lg font-medium transition-colors ${grabbingTasks.has(task.id) ? 'bg-gray-400 text-gray-200 cursor-not-allowed' : 'bg-blue-500 text-white hover:bg-blue-600'}`}

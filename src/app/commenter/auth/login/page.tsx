@@ -224,9 +224,9 @@ export default function CommenterLoginPage() {
           saveUserOnLogin(data.data);
         }
         
-        // 登录成功后1秒跳转到指定页面
+        // 登录成功后1秒跳转到指定页面，并添加检查支付密码的参数
         setTimeout(() => {
-          router.push(redirectPath);
+          router.push(`${redirectPath}`);
         }, 1000);
 
       } else {
