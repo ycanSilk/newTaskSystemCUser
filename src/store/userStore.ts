@@ -81,6 +81,28 @@ export const saveUserOnLoginSuccess = (userData: any) => {
     localStorage.setItem('auth_token', userData.token || '');
     localStorage.setItem('wallet_id', userData.wallet_id?.toString() || '');
     localStorage.setItem('is_agent', userData.is_agent?.toString() || '0');
+    
+    // 同时设置Cookie，确保API请求拦截器能获取到token
+    if (typeof document !== 'undefined' && userData.token) {
+      // 设置Cookie，支持跨域访问
+      const cookieOptions = {
+        path: '/',
+        sameSite: 'Lax' as const,
+        maxAge: 7 * 24 * 60 * 60, // 7天过期
+        secure: window.location.protocol === 'https:'
+      };
+      
+      let cookieString = `Commenter_token=${encodeURIComponent(userData.token)}`;
+      cookieString += `; path=${cookieOptions.path}`;
+      cookieString += `; SameSite=${cookieOptions.sameSite}`;
+      cookieString += `; max-age=${cookieOptions.maxAge}`;
+      if (cookieOptions.secure) {
+        cookieString += `; secure`;
+      }
+      
+      document.cookie = cookieString;
+      console.log('Token已设置到Cookie:', cookieString);
+    }
   
   setUser(user);
   console.log('登录成功后保存用户信息到内存:', user);

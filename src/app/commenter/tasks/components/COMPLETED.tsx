@@ -4,7 +4,8 @@ import { MessageOutlined } from '@ant-design/icons';
 
 // 导入时间排序组件
 import TimeOrder from '@/components/TimeOrder/TimeOrder';
-
+// 导入任务按钮组件
+import { OpenVideoButton } from '@/components/button/taskbutton';
 // 导入类型定义
 import { CompletedTask, CompletedTasksResponse } from '../../../types/task/getMyAceepedTaskListComponents/COMPLETED';
 
@@ -106,82 +107,45 @@ const CompletedTasksTab: React.FC<CompletedTasksTabProps> = ({
               sortField={sortField}
               currentOrder={sortOrder}
               onSortChange={handleSortChange}
-              buttonText="按审核通过时间排序"
+              buttonText="完成时间"
             />
           </div>
           
           {tasks.map((task) => (
           <div key={task.record_id} className="rounded-lg p-4 shadow-sm transition-all hover:shadow-md bg-white">
             <div className="flex justify-between items-start">
-              <h3 className="text-sm text-black inline-block flex items-center">
-                任务标题：{task.template_title || '未命名任务'}
-                <button 
-                  className="ml-2 text-blue-500 hover:text-blue-700 transition-colors"
-                  onClick={() => {
-                    navigator.clipboard.writeText(task.record_id.toString()).then(() => {
-                      // 使用模态框显示复制成功提示
-                      if (setModalMessage && setShowModal) {
-                        setModalMessage('任务ID已复制到剪贴板');
-                        setShowModal(true);
-                      }
-                    }).catch(err => {
-                      console.error('复制失败:', err);
-                      if (setModalMessage && setShowModal) {
-                        setModalMessage('复制失败，请手动复制');
-                        setShowModal(true);
-                      }
-                    });
-                  }}
-                >
-                  <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                  <span className="text-xs inline-block">复制任务ID</span>
-                </button>
-              </h3>
+              <h3 className="text-sm text-black inline-block flex items-center">任务标题：{task.template_title || ''}</h3>
             </div>
             
             {/* 价格和任务信息区域 - 显示单价、任务状态和发布时间 */}
             <div className=" mb-1">
               <div className="text-sm inline-block">奖励金额：<span className="font-bold text-red-500 ">¥{(task.reward_amount)}</span></div>
-              <div className="space-y-1">
-                <div>
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 mr-2">
-                    {task.status_text}
-                  </span>
-                </div>
-                <div className="text-sm text-black ">
-                    提交时间：{task.submitted_at}
-                </div>
-            
-                <div className="text-sm text-black ">
-                    审核通过时间：{task.reviewed_at}
-                </div>
-        
-                <div className="text-sm text-black mb-2 overflow-hidden text-ellipsis whitespace-normal max-h-[72px] line-clamp-3 block">
-                  推荐发布的评论：{task.recommend_mark.comment || ''}
-                </div>
-            
-                <div className='text-sm text-blue-500 block'>
+              <div className="">
+                <div className="text-sm text-black ">提交时间：{task.submitted_at}</div>            
+                <div className="text-sm text-black ">审核通过时间：{task.reviewed_at}</div>
+                <div className='text-sm text-blue-500 '>
                   @用户名称：<span className="font-bold text-blue-500">{task.recommend_mark.at_user || '无'}</span>
                 </div>
+                  <div>
+                    <p>要求：</p>
+                    <p className="text-sm text-blue-700 bg-blue-50 p-3 rounded border border-blue-100 overflow-hidden text-ellipsis whitespace-normal max-h-[72px] line-clamp-3">
+                      {task.recommend_mark?.comment || '无'}
+                    </p>
+                  </div>
+                
               </div>
             </div>
 
             {/* 完成任务评论的链接输入区域 */}
             {task.comment_url && (
-              <div className="mb-4 border border-blue-200 rounded-lg p-3 bg-blue-50">
-                <span className="text-sm text-blue-700 mr-2">提交的链接</span>
-                <button
-                  className="bg-blue-600 mt-1 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center"
-                  onClick={() => task.comment_url && window.open(task.comment_url, '_blank')}
-                >
-                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  打开视频
-                </button>
+              <div className="mb-1 border border-blue-200 rounded-lg p-3 bg-blue-50">
+                <span className="text-sm text-blue-700 mr-2">提交的链接:</span>
+                  <OpenVideoButton
+                    videoUrl={task.comment_url}
+                    defaultUrl="https://www.douyin.com/video/7597258174059613481"
+                    className="bg-blue-600 text-white px-3 py-1.5 rounded-md text-sm  inline-flex items-center"
+                    buttonText="打开抖音"
+                  />
               </div>
             )}
             
@@ -208,7 +172,7 @@ const CompletedTasksTab: React.FC<CompletedTasksTabProps> = ({
               </div>
             )}
             
-            {/* 查看详情按钮 */}
+            {/* 查看详情按钮 
             <div className="flex space-x-2">
               <button 
                 className="flex-1 bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
@@ -217,6 +181,7 @@ const CompletedTasksTab: React.FC<CompletedTasksTabProps> = ({
                 查看详情
               </button>
             </div>
+            */}
           </div>
         ))}
         </>

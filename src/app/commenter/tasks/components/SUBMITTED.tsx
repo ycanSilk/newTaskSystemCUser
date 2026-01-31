@@ -8,6 +8,9 @@ import NoTaskHint from '@/components/NoTaskHint/NoTaskHint';
 // 导入时间排序组件
 import TimeOrder from '@/components/TimeOrder/TimeOrder';
 
+// 导入任务按钮组件
+import { CopyCommentButton, OpenVideoButton } from '@/components/button/taskbutton';
+
 interface PendingReviewTasksTabProps {
   handleViewImage: (imageUrl: string) => void;
   setModalMessage: (message: string) => void;
@@ -154,7 +157,7 @@ const PendingReviewTasksTab: React.FC<PendingReviewTasksTabProps> = ({
             sortField={sortField}
             currentOrder={sortOrder}
             onSortChange={handleSortChange}
-            buttonText="按提交时间排序"
+            buttonText="审核时间"
           />
         </div>
       )}
@@ -165,52 +168,6 @@ const PendingReviewTasksTab: React.FC<PendingReviewTasksTabProps> = ({
           <div className="flex justify-between items-start">
             <h3 className="text-sm text-black inline-block flex items-center">
               任务标题：{task.template_title || '未命名任务'}
-              <button 
-                className="ml-2 text-blue-500 hover:text-blue-700 transition-colors"
-                onClick={() => {
-                  const taskIdToCopy = task.record_id.toString();
-                  
-                  // 检查navigator.clipboard是否可用
-                  if (!navigator.clipboard) {
-                    // 如果clipboard API不可用，使用传统的复制方法
-                    const textArea = document.createElement('textarea');
-                    textArea.value = taskIdToCopy;
-                    textArea.style.position = 'fixed';
-                    textArea.style.opacity = '0';
-                    document.body.appendChild(textArea);
-                    textArea.select();
-                    
-                    try {
-                      document.execCommand('copy');
-                      setModalMessage('任务ID已复制到剪贴板');
-                      setShowModal(true);
-                    } catch (err) {
-                      console.error('复制失败:', err);
-                      setModalMessage('复制失败，请手动复制');
-                      setShowModal(true);
-                    } finally {
-                      document.body.removeChild(textArea);
-                    }
-                    return;
-                  }
-                  
-                  // 如果clipboard API可用，使用它
-                  navigator.clipboard.writeText(taskIdToCopy).then(() => {
-                    // 使用模态框显示复制成功提示
-                    setModalMessage('任务ID已复制到剪贴板');
-                    setShowModal(true);
-                  }).catch(err => {
-                    console.error('复制失败:', err);
-                    setModalMessage('复制失败，请手动复制');
-                    setShowModal(true);
-                  });
-                }}
-              >
-                <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-                <span className="text-xs inline-block">复制任务ID</span>
-              </button>
             </h3>
           </div>
           
@@ -221,20 +178,21 @@ const PendingReviewTasksTab: React.FC<PendingReviewTasksTabProps> = ({
               <span>提交时间: {task.submitted_at || '-'}</span>
             </div>
           </div>
+          <div className='text-sm text-blue-500 '>@用户名称：{task.recommend_mark?.at_user || '无'}</div>
+          <p>要求：</p>
+          <p className="text-sm text-blue-700 bg-blue-50 p-3 rounded border border-blue-100 overflow-hidden text-ellipsis whitespace-normal max-h-[72px] line-clamp-3">
+            {task.recommend_mark?.comment || '无'}
+          </p>
           {/* 提交的链接显示 */}
           {task.comment_url && (
-            <div className="mb-4 mt-2 border border-blue-200 rounded-lg p-3 bg-blue-50">
+            <div className="mb-1 mt-2 p-3 bg-blue-50 border border-blue-100 rounded">
               <span className="text-sm text-blue-700 mr-2">提交的链接：</span>
-              <button
-                className="mt-1 bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center"
-                onClick={() => task.comment_url && window.open(task.comment_url, '_blank')}
-              >
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                打开链接
-              </button>
+              <CopyCommentButton
+              comment={task.comment_url || ''}
+              className="text-xs bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-500 transition-colors"
+              buttonText="复制评论"
+            />
+              
             </div>
           )}
           

@@ -39,6 +39,11 @@ export default function CommenterHallContentPage() {
     icon: <WarningOutlined className="text-yellow-500" />
   });
   
+  // 轮询相关状态
+  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
+  const [lastTaskCount, setLastTaskCount] = useState<number>(0);
+  const [lastTaskHash, setLastTaskHash] = useState<string>('');
+  
   // 显示通用提示框
   const showAlert = (title: string, message: string, iconType: 'warning' | 'error' | 'success' | 'info' = 'warning') => {
     let icon;
@@ -80,10 +85,10 @@ export default function CommenterHallContentPage() {
   };
   
   // 从API获取待领取订单
-  const fetchAvailableTasks = async (page: number = 0) => {
-    if (page === 0) {
+  const fetchAvailableTasks = async (page: number = 0, isPolling: boolean = false) => {
+    if (page === 0 && !isPolling) {
       setIsLoading(true);
-    } else {
+    } else if (!isPolling) {
       setLoadingMore(true);
     }
     setError(null);
@@ -99,7 +104,12 @@ export default function CommenterHallContentPage() {
       // 调用后端API
       const response = await fetch(url.toString(), {
         method: 'GET',
-        credentials: 'include'
+        credentials: 'include',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
       });
 
       // 检查响应状态
@@ -116,11 +126,27 @@ export default function CommenterHallContentPage() {
         // 过滤掉title为"放大镜搜索词"的任务
         const filteredTasks = formattedTasks.filter(task => task.title !== '放大镜搜索词');
         
-        // 如果是第一页，替换任务列表；否则，追加任务
-        if (page === 0) {
-          setTasks(filteredTasks);
+        // 生成任务哈希值，用于比较是否有新数据
+        const currentTaskHash = JSON.stringify(filteredTasks.map(task => task.id));
+        
+        // 如果是轮询且有新数据，更新缓存
+        if (isPolling && page === 0) {
+          if (currentTaskHash !== lastTaskHash || filteredTasks.length !== lastTaskCount) {
+            console.log('检测到新任务数据，更新缓存');
+            setTasks(filteredTasks);
+            setLastTaskHash(currentTaskHash);
+            setLastTaskCount(filteredTasks.length);
+            setLastUpdated(new Date());
+          }
         } else {
-          setTasks(prevTasks => [...prevTasks, ...filteredTasks]);
+          // 如果是第一页，替换任务列表；否则，追加任务
+          if (page === 0) {
+            setTasks(filteredTasks);
+            setLastTaskHash(currentTaskHash);
+            setLastTaskCount(filteredTasks.length);
+          } else {
+            setTasks(prevTasks => [...prevTasks, ...filteredTasks]);
+          }
         }
         
         setTotalItems(filteredTasks.length);
@@ -137,10 +163,15 @@ export default function CommenterHallContentPage() {
       console.error('获取任务列表失败:', error);
       const errorMessage = error instanceof Error ? error.message : '加载任务列表时发生未知错误';
       setError(errorMessage);
-      showAlert('错误', errorMessage, 'error');
+      // 轮询时不显示错误提示，避免打扰用户
+      if (!isPolling) {
+        showAlert('错误', errorMessage, 'error');
+      }
     } finally {
-      setIsLoading(false);
-      setLoadingMore(false);
+      if (!isPolling) {
+        setIsLoading(false);
+        setLoadingMore(false);
+      }
     }
   };
   
@@ -187,6 +218,8 @@ export default function CommenterHallContentPage() {
   // 刷新任务
   const handleRefresh = async () => {
     setIsRefreshing(true);
+    // 主动刷新时，强制重新请求API，释放缓存
+    console.log('用户主动刷新，释放缓存并重新请求API');
     await fetchAvailableTasks(0); // 刷新时回到第一页
     setIsRefreshing(false);
   };
@@ -289,11 +322,33 @@ export default function CommenterHallContentPage() {
       console.log('=== 抢单功能结束 ===');
     }
   };
-
+  let xunhuan=0;
   // 初始加载订单和排序变化时重新获取数据
   useEffect(() => {
     fetchAvailableTasks(0);
   }, [sortBy, sortOrder]); // 当排序方式改变时重新获取数据
+  
+  // 定时轮询，实现被动释放缓存更新
+  useEffect(() => {
+    // 启动轮询，每隔1分钟检查一次新数据
+  
+    const interval = setInterval(() => {
+      console.log('执行定时轮询，检查新任务数据');
+      xunhuan+=1;
+      fetchAvailableTasks(0, true);
+       console.log('轮询次数',xunhuan)
+    }, 60 * 1000); // 1分钟
+
+    setPollingInterval(interval);
+    
+    // 组件卸载时清除轮询
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+        setPollingInterval(null);
+      }
+    };
+  }, [lastTaskHash, lastTaskCount]); // 依赖项确保轮询正常工作
 
   // 滚动懒加载
   useEffect(() => {

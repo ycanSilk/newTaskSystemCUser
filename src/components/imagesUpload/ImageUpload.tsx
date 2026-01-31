@@ -181,7 +181,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
           <div className="relative max-w-4xl max-h-[90vh]">
             {/* 关闭按钮 */}
             <button
-              className="absolute top-[-40px] right-0 text-white text-2xl cursor-pointer hover:opacity-80 transition-opacity"
+              className="absolute top-4 right-4 bg-blue-600 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors z-50"
               onClick={handleClosePreview}
               aria-label="关闭预览"
             >

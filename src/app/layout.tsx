@@ -2,7 +2,7 @@
 
 import './globals.css';
 import { cn } from '@/lib/utils';
-import { Providers } from '@/components/providers/Providers';
+import { ToastProvider, Toaster } from '@/components/ui/Toast';
 
 
 export const metadata = {
@@ -45,9 +45,10 @@ export default function RootLayout({
       <body className={cn(
         'min-h-screen bg-gray-50 font-sans antialiased'
       )}>
-        <Providers>
+        <ToastProvider>
           {children}
-        </Providers>
+          <Toaster />
+        </ToastProvider>
       </body>
     </html>
   )

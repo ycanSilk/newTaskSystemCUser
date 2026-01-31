@@ -34,32 +34,51 @@ export const requestInterceptor = async (config: AxiosRequestConfig): Promise<Ax
     ...config.headers,     // 展开当前请求的头信息，优先级更高
   };
   
-  // 从Cookie获取Token（认证信息）
+  // 从Cookie或localStorage获取Token（认证信息）
   try {
-    // 获取Cookie存储对象
-    const cookieStore = await cookies();
     let token: string | undefined;
     
-    // 遍历支持的Token键名列表，尝试获取Token
-    // 这是为了兼容旧版本，如果有多个可能的token名字，会依次检查
-    for (const key of apiConfig.auth.tokenKeys) {
-      // 尝试从Cookie中获取token值
-      token = cookieStore.get(key)?.value;
-      // 如果获取到了token，就跳出循环
-      if (token) {
-        break;
+    // 1. 尝试从Cookie获取Token
+    try {
+      // 获取Cookie存储对象
+      const cookieStore = await cookies();
+      
+      // 遍历支持的Token键名列表，尝试获取Token
+      // 这是为了兼容旧版本，如果有多个可能的token名字，会依次检查
+      for (const key of apiConfig.auth.tokenKeys) {
+        // 尝试从Cookie中获取token值
+        token = cookieStore.get(key)?.value;
+        // 如果获取到了token，就跳出循环
+        if (token) {
+          console.log('从Cookie获取到Token:', key);
+          break;
+        }
+      }
+    } catch (cookieError) {
+      console.log('从Cookie获取Token失败，尝试从localStorage获取:', cookieError);
+    }
+    
+    // 2. 如果Cookie中没有获取到Token，尝试从localStorage获取
+    if (!token && typeof window !== 'undefined') {
+      const localStorageToken = localStorage.getItem('auth_token');
+      token = localStorageToken || undefined;
+      if (localStorageToken) {
+        console.log('从localStorage获取到Token');
       }
     }
     
-    // 如果获取到Token，添加到请求头
+    // 3. 如果获取到Token，添加到请求头
     // X-Token是自定义头，用于兼容旧的API
     if (token) {
       config.headers['X-Token'] = token;
+      console.log('Token已添加到请求头');
+    } else {
+      console.log('未获取到Token，请求将不包含认证信息');
     }
   } catch (error) {
     // 如果获取token失败，记录错误日志，但不中断请求
     // 这样即使token获取失败，请求也能继续发送（可能用于不需要认证的接口）
-    console.error('Error getting token from cookie:', error);
+    console.error('Error getting token:', error);
   }
   
   // 添加请求ID，用于日志追踪

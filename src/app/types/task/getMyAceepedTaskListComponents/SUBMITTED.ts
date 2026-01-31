@@ -2,6 +2,7 @@
 export interface RecommendMark {
   comment: string;
   image_url: string;
+  at_user: string;
 }
 
 // 任务数据结构

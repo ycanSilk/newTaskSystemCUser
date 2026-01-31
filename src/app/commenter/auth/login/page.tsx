@@ -112,26 +112,19 @@ export default function CommenterLoginPage() {
     return isValid;
   };
 
-  // 初始化验证码
+  // 初始化验证码和表单
   useEffect(() => {
     // 确保在客户端环境中运行
     if (typeof window !== 'undefined') {
       const initialCaptcha = generateCaptcha();
       setCaptchaCode(initialCaptcha);
-      // 不自动填充验证码，让用户自己输入
-      setFormData(prev => ({ ...prev, captcha: '' }));
+      // 设置表单数据
+      setFormData({
+        username: '',
+        password: '',
+        captcha: ''
+      });
     }
-  }, []);
-
-  // 自动填充测试账号（仅填充用户名和密码，不填充验证码）
-  useEffect(() => {
-    // 设置默认测试账号信息
-    setFormData(prev => ({
-      ...prev,
-      username: '',
-      password: '',
-      // captcha 不自动填充
-    }));
   }, []); // 只在组件挂载时设置一次
 
   // 验证码60秒自动刷新

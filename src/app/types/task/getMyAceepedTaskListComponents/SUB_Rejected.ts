@@ -4,6 +4,7 @@
 export interface RecommendMark {
   comment: string;
   image_url: string;
+  at_user: string;
 }
 
 // 任务进度类型
@@ -26,6 +27,7 @@ export interface Pagination {
 
 // 任务列表项类型
 export interface RejectedTask {
+  title: string;
   record_id: number;
   b_task_id: number;
   template_title: string;

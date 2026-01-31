@@ -94,7 +94,7 @@ const RejectedTasksTab: React.FC<RejectedTasksTabProps> = ({
             sortField={sortField}
             currentOrder={sortOrder}
             onSortChange={handleSortChange}
-            buttonText="按驳回时间排序"
+            buttonText="驳回时间"
           />
         </div>
       )}
@@ -106,56 +106,27 @@ const RejectedTasksTab: React.FC<RejectedTasksTabProps> = ({
 
       {/* 任务列表 */}
       {!isLoading && tasks.length > 0 && tasks.map((task) => (
-        <div key={task.record_id} className="rounded-lg p-4 mb-4 shadow-sm transition-all hover:shadow-md bg-white border border-red-100">
-          <div className="flex justify-between items-start mb-2">
-            <h3 className="text-sm text-black inline-block flex items-center">
-              订单号：{task.record_id || '未命名任务'}
-              <button 
-                className="ml-2 text-blue-500 hover:text-blue-700 transition-colors"
-                onClick={() => {
-                  navigator.clipboard.writeText(task.record_id.toString()).then(() => {
-                    setModalMessage('订单号已复制到剪贴板');
-                    setShowModal(true);
-                  }).catch(err => {
-                    console.error('复制失败:', err);
-                    setModalMessage('复制失败，请手动复制');
-                    setShowModal(true);
-                  });
-                }}
-              >
-                <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-                <span className="text-xs inline-block">复制</span>
-              </button>
-            </h3>
-          </div>
-          
+        <div key={task.record_id} className="rounded-lg p-4 mb-2 shadow-sm transition-all hover:shadow-md bg-white border border-red-100">
+          <div className="text-lg font-bold text-red-600">{task.title}</div>          
           {/* 价格和任务信息区域 */}
-          <div className="mb-2">
-            <div className="text-sm mb-1 inline-block">奖励金额：<span className='text-red-500 font-bold'>¥{task.reward_amount}</span></div>
-            <div className="space-y-2">
-              <div>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 mr-2">
-                  {task.status_text || '已驳回'}
-                </span>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                  {task.template_title}
-                </span>
-              </div>
-              
-              <div className='text-sm'>接受时间: {task.created_at || '-'}</div>
-              <div className='text-sm'>提交时间: {task.submitted_at || '-'}</div>
+          <div className="mb-1">
+            <div className="text-sm">奖励金额：<span className='text-red-500 font-bold'>¥{task.reward_amount}</span></div>
+            <div className='text-sm'>接受时间: {task.created_at || '-'}</div>
+            <div className='text-sm'>提交时间: {task.submitted_at || '-'}</div>
+            <div className='text-sm text-blue-500 '>
+              @用户名称：<span className="font-bold text-blue-500">{task.recommend_mark.at_user || '无'}</span>
             </div>
-          </div>
-
-          <div className="text-sm mb-2 overflow-hidden text-ellipsis whitespace-normal max-h-[72px] line-clamp-3">
-            要求：{task.recommend_mark.comment || '无特殊要求'}
+            <div>
+                    <p>要求：</p>
+                    <p className="text-sm text-blue-700 bg-blue-50 p-3 rounded border border-blue-100 overflow-hidden text-ellipsis whitespace-normal max-h-[72px] line-clamp-3">
+                      {task.recommend_mark?.comment || '无'}
+                    </p>
+                  </div>
           </div>
           
           {/* 驳回原因 */}
-          <div className="mb-4 border border-red-200 rounded-lg p-3 bg-red-50">
-            <div className="text-sm text-red-700 block mb-2">驳回原因：</div>
+          <div className="mb-2 border border-red-200 rounded-lg p-3 bg-red-50">
+            <div className="text-sm text-red-700 block mb-1">驳回原因：</div>
             <div className="text-sm bg-white p-2 rounded border border-red-200 text-gray-800">
               {task.reject_reason || '无'}
             </div>
@@ -164,7 +135,7 @@ const RejectedTasksTab: React.FC<RejectedTasksTabProps> = ({
           {/* 截图显示区域 */}
           {task.screenshots && task.screenshots.length > 0 && (
             <div className="mb-4 border border-blue-200 rounded-lg p-3 bg-blue-50">
-              <div className="text-sm text-blue-700 mb-2">已上传截图：</div>
+              <div className="text-sm text-blue-700 mb-1">已上传截图：</div>
               <div 
                 className={`w-[100px] h-[100px] relative cursor-pointer overflow-hidden rounded-lg border border-gray-300 bg-gray-50 transition-colors hover:border-blue-400 hover:shadow-md flex items-center justify-center`}
                 onClick={() => handleViewImage(task.screenshots[0])}

@@ -59,7 +59,7 @@ export default function CommenterTasksPage() {
         >
           <div className="absolute top-4 right-4 text-white">
             <button 
-              className="p-2 rounded-full bg-black bg-opacity-50 hover:bg-opacity-70 transition-colors"
+              className="p-2 rounded-full bg-blue-500 bg-opacity-50 hover:bg-opacity-70 transition-colors z-index-50"
               onClick={(e) => {
                 e.stopPropagation();
                 handleCloseImageViewer();
@@ -71,13 +71,13 @@ export default function CommenterTasksPage() {
             </button>
           </div>
           <div 
-            className="relative max-w-5xl max-h-[90vh]"
+            className="relative max-w-[300px] max-h-[600px]"
             onClick={(e) => e.stopPropagation()}
           >
             <img 
               src={selectedImage} 
               alt="预览图片" 
-              className="max-w-full max-h-[90vh] object-contain"
+              className="max-w-[300px] max-h-[600px] object-contain"
             />
           </div>
         </div>

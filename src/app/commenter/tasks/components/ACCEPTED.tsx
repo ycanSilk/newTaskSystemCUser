@@ -8,6 +8,8 @@ import ImageUpload from '@/components/imagesUpload/ImageUpload';
 import EmptyState from '@/components/NoTaskHint/NoTaskHint';
 // 导入时间排序组件
 import TimeOrder from '@/components/TimeOrder/TimeOrder';
+// 导入任务按钮组件
+import { CopyCommentButton, OpenVideoButton } from '@/components/button/taskbutton';
 
 // 导入外部类型定义
 import {
@@ -16,6 +18,8 @@ import {
   SubmitTaskRequest,
   SubmitTaskResponse
 } from '@/app/types/task/getMyAceepedTaskListComponents/ACCEPTED';
+
+const defaultUrl='https://www.douyin.com/video/7598199346240228614'
 
 interface ProgressTasksTabProps {
   handleViewImage?: (imageUrl: string) => void;
@@ -40,6 +44,20 @@ const ProgressTasksTab: React.FC<ProgressTasksTabProps> = ({
   handleSubmitOrder,
   isSubmitting
 }) => {
+  // 任务排序函数
+  const sortTasks = (tasks: Task[], field: string, order: 'asc' | 'desc'): Task[] => {
+    return [...tasks].sort((a, b) => {
+      const aValue = a[field as keyof Task] as string;
+      const bValue = b[field as keyof Task] as string;
+      
+      if (order === 'asc') {
+        return aValue.localeCompare(bValue);
+      } else {
+        return bValue.localeCompare(aValue);
+      }
+    });
+  };
+  
   // 状态管理
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -69,21 +87,25 @@ const ProgressTasksTab: React.FC<ProgressTasksTabProps> = ({
         const responseData: GetMyAcceptedTaskListResponse = await response.json();
         
         if (responseData.code === 0) {
-          // 对任务列表进行排序
+          // API成功时，显示API返回的数据
+          console.log('API请求成功，显示API返回的数据');
           const sortedTasks = sortTasks(responseData.data.list, sortField, sortOrder);
           setTasks(sortedTasks);
         } else {
+          // API失败时，显示空数据并显示错误信息
+          console.log('API返回失败，显示空数据');
+          setTasks([]);
           setErrorMessage(responseData.message || '获取任务失败');
           setModalMessage('获取任务失败: ' + (responseData.message || '未知错误'));
           setShowModal(true);
-          setTasks([]);
         }
       } catch (error) {
-        console.error('获取任务失败:', error);
+        console.error('获取任务失败，显示空数据:', error);
+        // 网络异常时显示空数据
+        setTasks([]);
         setErrorMessage('网络异常，请稍后重试');
         setModalMessage('网络异常，请稍后重试');
         setShowModal(true);
-        setTasks([]);
       } finally {
         setIsLoading(false);
       }
@@ -96,20 +118,6 @@ const ProgressTasksTab: React.FC<ProgressTasksTabProps> = ({
     // 组件卸载时清除定时器
     return () => clearInterval(pollingInterval);
   }, [setModalMessage, setShowModal, sortField, sortOrder]);
-  
-  // 任务排序函数
-  const sortTasks = (tasks: Task[], field: string, order: 'asc' | 'desc'): Task[] => {
-    return [...tasks].sort((a, b) => {
-      const aValue = a[field as keyof Task] as string;
-      const bValue = b[field as keyof Task] as string;
-      
-      if (order === 'asc') {
-        return aValue.localeCompare(bValue);
-      } else {
-        return bValue.localeCompare(aValue);
-      }
-    });
-  };
   
   // 排序变化处理函数
   const handleSortChange = (field: string, order: 'asc' | 'desc') => {
@@ -124,6 +132,8 @@ const ProgressTasksTab: React.FC<ProgressTasksTabProps> = ({
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentVideoUrl, setCurrentVideoUrl] = useState('');
     const [currentComment, setCurrentComment] = useState('');
+    // 提交成功模态框状态
+    const [isSubmitSuccessModalOpen, setIsSubmitSuccessModalOpen] = useState(false);
     
   // 处理评论链接输入变化
   const handleReviewLinkChange = (taskId: string, value: string) => {
@@ -139,23 +149,84 @@ const ProgressTasksTab: React.FC<ProgressTasksTabProps> = ({
   };
 
   //打开视频按钮跳转函数
-  const handleOpenVideoModal = async (videoUrl: string, comment?: string) => {
+  const handleOpenVideoModal = async (videoUrl: string) => {
     console.log('传入的url', videoUrl);
     // 打开新标签页跳转到指定URL
-    const defaultUrl='https://www.douyin.com/'
-    const newWindow = window.open(defaultUrl, '_blank');
-    
-    if (newWindow) {
-      console.log('新标签页已打开');
-      newWindow.focus();
-    }
-
-    // 简单复制URL到剪贴板
+    const defaultUrl='https://www.douyin.com/video/7598199346240228614'
+    const newWindow = window.open(defaultUrl);
+    console.log('新标签页已打开');
+    // 复制URL到剪贴板（兼容PC和手机端，支持HTTP和HTTPS）
     try {
-      const copyUrl = await navigator.clipboard.writeText(videoUrl);
-      console.log('URL已复制到剪贴板', videoUrl);
+      // 优先尝试现代剪贴板API（确保navigator.clipboard和writeText方法都存在）
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        try {
+          await navigator.clipboard.writeText(videoUrl);
+          console.log('URL已复制到剪贴板（现代API）', videoUrl);
+        } catch (clipboardError) {
+          console.log('现代剪贴板API失败，尝试传统方法:', clipboardError);
+          // 现代API失败时回退到传统方法
+          useTraditionalCopyMethod(videoUrl);
+        }
+      } else {
+        // 不支持现代剪贴板API时使用传统方法
+        useTraditionalCopyMethod(videoUrl);
+      }
     } catch (error) {
       console.error('复制到剪贴板失败:', error);
+    }
+  };
+  
+  // 传统复制方法（支持HTTP和HTTPS环境）
+  const useTraditionalCopyMethod = (text: string) => {
+    try {
+      // 创建临时textarea元素
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      
+      // 设置样式使其不可见
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      textArea.style.width = '2em';
+      textArea.style.height = '2em';
+      textArea.style.padding = '0';
+      textArea.style.border = 'none';
+      textArea.style.outline = 'none';
+      textArea.style.boxShadow = 'none';
+      textArea.style.background = 'transparent';
+      
+      // 添加到文档
+      document.body.appendChild(textArea);
+      
+      // 选择并复制文本
+      textArea.focus();
+      textArea.select();
+      
+      // 对于移动设备，尝试设置选择范围
+      if (typeof textArea.setSelectionRange === 'function') {
+        textArea.setSelectionRange(0, text.length);
+      } else {
+        // 对于不支持setSelectionRange的浏览器
+        (textArea as any).createTextRange().select();
+      }
+      
+      try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+          console.log('URL已复制到剪贴板（传统方法）', text);
+        } else {
+          console.error('传统复制方法失败: execCommand返回false');
+        }
+      } catch (err) {
+        console.error('传统复制方法失败:', err);
+      } finally {
+        // 清理临时元素
+        setTimeout(() => {
+          document.body.removeChild(textArea);
+        }, 100);
+      }
+    } catch (error) {
+      console.error('传统复制方法执行失败:', error);
     }
   };
 
@@ -204,7 +275,7 @@ const ProgressTasksTab: React.FC<ProgressTasksTabProps> = ({
         b_task_id: task.b_task_id,
         record_id: task.record_id,
         comment_url: reviewLinks[task.id] || '',
-        screenshots: task.screenshots 
+        screenshots: Array.isArray(task.screenshots) ? task.screenshots : []
       };
       
       // 验证必填字段
@@ -233,10 +304,14 @@ const ProgressTasksTab: React.FC<ProgressTasksTabProps> = ({
         
         if (responseData.code === 0) {
           // 提交成功
-          setModalMessage(responseData.message || '任务提交成功');
-          setShowModal(true);
-          // 刷新任务列表
-          handleRefreshTasks();
+          console.log('提交成功', responseData);
+          // 显示提交成功模态框
+          setIsSubmitSuccessModalOpen(true);
+          // 延迟刷新任务列表
+          setTimeout(() => {
+            handleRefreshTasks();
+          }, 1000);
+
         } else {
           // 提交失败
           setModalMessage(responseData.message || '任务提交失败');
@@ -254,6 +329,9 @@ const ProgressTasksTab: React.FC<ProgressTasksTabProps> = ({
     const [imageUrls, setImageUrls] = useState<Record<string, string[]>>({});
     const [currentTaskId, setCurrentTaskId] = useState<string>('');
     
+  // 页面跳转逻辑
+  const router = useRouter();
+
   return (
     <div className="mt-6">
       {/* 加载状态显示 */}
@@ -276,19 +354,19 @@ const ProgressTasksTab: React.FC<ProgressTasksTabProps> = ({
 
       {/* 排序按钮 */}
       {!isLoading && tasks.length > 0 && (
-        <div className="mb-4 flex justify-end">
+        <div className="mb-1 flex justify-end">
           <TimeOrder
             sortField={sortField}
             currentOrder={sortOrder}
             onSortChange={handleSortChange}
-            buttonText="按接受时间排序"
+            buttonText="接取时间"
           />
         </div>
       )}
 
       {/* 任务列表 */}
       {!isLoading && tasks.length > 0 && tasks.map((task) => (
-        <div key={task.id || 'unknown'} className="rounded-lg p-4 mb-4 shadow-sm transition-all hover:shadow-md bg-white">
+        <div key={task.id || 'unknown'} className="rounded-lg p-4 mb-1 shadow-sm transition-all hover:shadow-md bg-white">
           {/* 添加任务操作按钮组 */}
           
           <div className=" mb-2">
@@ -322,38 +400,31 @@ const ProgressTasksTab: React.FC<ProgressTasksTabProps> = ({
           {/* 推荐评论区域 - 所有任务都显示 */}
         <div className="mb-2 bg-blue-50 p-3 rounded-lg border border-blue-100">
           <div className="flex justify-between items-center mb-1">
-            <h4 className="text-sm font-medium text-blue-700"><EditOutlined className="inline-block mr-1" /> 推荐评论</h4>
-            <button
-                className="text-xs bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-500 transition-colors"
-                onClick={() => {
-                  navigator.clipboard.writeText(task.recommend_mark?.comment || '');
-                  console.log('评论已复制到剪贴板', task.recommend_mark?.comment || '');
-                }}
-              >
-                 复制评论
-              </button>
+            <div>@用户名称：{task.recommend_mark?.at_user || '无'}</div>
+            <h4 className="text-sm font-medium text-blue-700"><EditOutlined className="inline-block mr-1" /> 要求：</h4>
+            <CopyCommentButton
+              comment={task.recommend_mark?.comment || ''}
+              className="text-xs bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-500 transition-colors"
+              buttonText="复制评论"
+            />
           </div>
           <p className="text-sm text-black bg-white p-3 rounded border border-blue-100 overflow-hidden text-ellipsis whitespace-normal max-h-[72px] line-clamp-3">
-            {task.recommend_mark?.comment || ''}
+            {task.recommend_mark?.comment || '无'}
           </p>
         </div>
       
       <div className="mb-2 bg-blue-50 border border-blue-500 py-2 px-3 rounded-lg">
           <p className='mb-1  text-sm text-blue-600'>任务视频点击进入：</p>
-          <button 
+          <OpenVideoButton 
+            videoUrl={task.video_url}
+            defaultUrl="https://www.douyin.com/video/7597258174059613481"
             className="bg-blue-600 text-white px-3 py-1.5 rounded-md text-sm  inline-flex items-center"
-            onClick={async () => {
-              if (task.video_url) {
-                await handleOpenVideoModal(task.video_url, task.recommend_mark?.comment);
-              }
-            }}
-          >
-             打开视频
-          </button>
+            buttonText="打开抖音"
+          />
       </div>    
 
       {/* 评论链接输入框 - 新增 */}
-      <div className="mb-4 border border-blue-200 rounded-lg p-3 bg-blue-50">
+      <div className="mb-1 border border-blue-200 rounded-lg p-3 bg-blue-50">
         <label className="block text-sm font-medium mb-1 text-blue-700">
           <LinkOutlined className="inline-block mr-1" /> 完成任务评论的链接输入:
         </label>
@@ -364,21 +435,10 @@ const ProgressTasksTab: React.FC<ProgressTasksTabProps> = ({
           value={reviewLinks[task.id] || task.comment_url || ''}
           onChange={(e) => handleReviewLinkChange(task.id, e.target.value)}
         />
-        <button
-            className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-            onClick={async () => {
-              const commentUrl = reviewLinks[task.id] || task.comment_url || '';
-              if (commentUrl) {
-                await handleOpenCommentLink(commentUrl);
-              }
-            }}
-        >
-          打开链接
-        </button>
       </div>
 
           {/* 截图上传区域 - 使用新的上传图片组件 */}
-          <div className="mb-4 border border-blue-200 rounded-lg p-3 bg-blue-50">
+          <div className="mb-1 border border-blue-200 rounded-lg p-3 bg-blue-50">
             <div className='text-sm text-blue-600 pl-2 py-2'>完成任务截图上传：</div>
             <div>
               <ImageUpload
@@ -389,7 +449,16 @@ const ProgressTasksTab: React.FC<ProgressTasksTabProps> = ({
                     setTasks(prevTasks => 
                       prevTasks.map(t => 
                         t.id === task.id 
-                          ? { ...t, screenshots: urls[0] } 
+                          ? { ...t, screenshots: urls } 
+                          : t
+                      )
+                    );
+                  } else {
+                    // 清空截图
+                    setTasks(prevTasks => 
+                      prevTasks.map(t => 
+                        t.id === task.id 
+                          ? { ...t, screenshots: [] } 
                           : t
                       )
                     );
@@ -400,20 +469,8 @@ const ProgressTasksTab: React.FC<ProgressTasksTabProps> = ({
               />
             </div>
             
-            {/* 已上传图片显示 */}
-            {task.screenshots && (
-              <div className="mt-2">
-                <img 
-                  src={task.screenshots} 
-                  alt="任务截图" 
-                  className="w-[100px] h-[100px] object-contain rounded-lg border border-gray-300 cursor-pointer hover:shadow-md"
-                  onClick={() => handleViewImage && handleViewImage(task.screenshots || '')}
-                />
-              </div>
-            )}
-            
             {/* 提交任务按钮 */}
-            <div className="flex justify-end">
+            <div className="flex justify-end mt-4">
               <button
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors text-sm"
                 onClick={() => handleSubmitTask(task)}
@@ -426,35 +483,37 @@ const ProgressTasksTab: React.FC<ProgressTasksTabProps> = ({
         </div>
       ))}
 
-      {/* 打开视频确认模态框 - 已注释掉 */}
-      {/* {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-sm">
-            <h3 className="text-lg font-medium mb-4">提示</h3>
-            <p className="text-gray-700 mb-6">是否需要打开抖音APP？</p>
-            <div className="flex justify-end space-x-3">
-              <button 
-                className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-md"
-                onClick={() => setIsModalOpen(false)}
-              >
-                取消
-              </button>
-              <button 
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md"
+      {/* 提交成功模态框 */}
+      {isSubmitSuccessModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-sm w-[90%] mx-auto">
+            <h3 className="text-xl font-bold text-center mb-1 text-blue-600">提交成功</h3>
+            <p className="text-center mb-6">您的任务已成功提交，正在等待审核</p>
+            <div className="flex flex-col space-y-3">
+              <button
+                className="w-full bg-blue-600 text-white py-2.5 px-4 rounded-md hover:bg-blue-700 transition-colors text-sm"
                 onClick={() => {
-                  // 打开视频链接
-                  window.open(currentVideoUrl, '_blank');
-                  // 关闭模态框
-                  setIsModalOpen(false);
+                  setIsSubmitSuccessModalOpen(false);
+                  // 跳转到待审核任务页面
+                  router.push('/commenter/tasks');
                 }}
               >
-                确定
+                查看待审核的任务
+              </button>
+              <button
+                className="w-full bg-gray-600 text-white py-2.5 px-4 rounded-md hover:bg-gray-700 transition-colors text-sm"
+                onClick={() => {
+                  setIsSubmitSuccessModalOpen(false);
+                  // 跳转到继续接取任务页面
+                  router.push('/commenter/hall-content');
+                }}
+              >
+                继续接取任务
               </button>
             </div>
           </div>
         </div>
-      )} */}
-
+      )}
     </div>
   );
 }
