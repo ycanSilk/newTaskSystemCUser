@@ -482,7 +482,7 @@ export default function CommenterHallContentPage() {
                   <div>
                     <h3 className="font-bold">任务标题：{task.title}</h3>
                     <div>订单号：{task.id}</div>
-                    <div> 到期时间：{task.deadline_text}</div>
+                    <div> 过期时间：{task.deadline_text}</div>
                     <div className="">奖励金额：<span className='text-xl text-red-500 font-bold'>{task.commission}</span></div>
                   </div>
                 </div>

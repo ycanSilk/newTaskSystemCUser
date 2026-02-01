@@ -48,11 +48,8 @@ const OpenVideoButton: React.FC<OpenVideoButtonProps> = ({
       if (typeof textArea.setSelectionRange === 'function') {
         textArea.setSelectionRange(0, text.length);
       } else {
-        // 对于不支持setSelectionRange的浏览器
-          interface TextAreaWithCreateTextRange extends HTMLTextAreaElement {
-            createTextRange: () => Range;
-          }
-          (textArea as TextAreaWithCreateTextRange).createTextRange().select();
+        // 对于不支持setSelectionRange的浏览器，使用select()方法
+        textArea.select();
       }
       
       try {
