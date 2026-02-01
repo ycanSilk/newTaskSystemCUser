@@ -1,12 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { BulbOutlined } from '@ant-design/icons';
 import { useRouter, useSearchParams } from 'next/navigation';
-import ProgressTasksTab from './components/ACCEPTED';
-import PendingReviewTasksTab from './components/SUBMITTED';
-import CompletedTasksTab from './components/COMPLETED';
-import RejectedTasksTab from './components/SUB_Rejected';
+import Image from 'next/image';
+import { SkeletonTaskList } from '@/components/skeleton/Skeleton';
+// 动态导入组件，实现代码分割
+const ProgressTasksTab = React.lazy(() => import('./components/ACCEPTED'));
+const PendingReviewTasksTab = React.lazy(() => import('./components/SUBMITTED'));
+const CompletedTasksTab = React.lazy(() => import('./components/COMPLETED'));
+const RejectedTasksTab = React.lazy(() => import('./components/SUB_Rejected'));
 
 // 导入类型定义
 import { TaskStatus } from '@/app/types/task/getMyAccepedTaskListTypes';
@@ -74,11 +77,16 @@ export default function CommenterTasksPage() {
             className="relative max-w-[300px] max-h-[600px]"
             onClick={(e) => e.stopPropagation()}
           >
-            <img 
-              src={selectedImage} 
-              alt="预览图片" 
-              className="max-w-[300px] max-h-[600px] object-contain"
-            />
+            {selectedImage && (
+              <Image 
+                src={selectedImage} 
+                alt="预览图片" 
+                width={300} 
+                height={600} 
+                className="object-contain"
+                priority
+              />
+            )}
           </div>
         </div>
       )}
@@ -117,36 +125,38 @@ export default function CommenterTasksPage() {
         
         {/* 主内容区域 - 根据activeTab渲染对应的组件 */}
         <div className="mx-4 mt-6">
-          {activeTab === 'ACCEPTED' && (
-            <ProgressTasksTab 
-              setModalMessage={setModalMessage}
-              setShowModal={setShowModal}
-            />
-          )}
-          
-          {activeTab === 'SUBMITTED' && (
-            <PendingReviewTasksTab
-              handleViewImage={handleViewImage}
-              setModalMessage={setModalMessage}
-              setShowModal={setShowModal}
-            />
-          )}
-          
-          {activeTab === 'COMPLETED' && (
-            <CompletedTasksTab
-              handleViewImage={handleViewImage}
-              setModalMessage={setModalMessage}
-              setShowModal={setShowModal}
-            />
-          )}
-          
-          {activeTab === 'SUB_Rejected' && (
-            <RejectedTasksTab
-              handleViewImage={handleViewImage}
-              setModalMessage={setModalMessage}
-              setShowModal={setShowModal}
-            />
-          )}
+          <Suspense fallback={<div className="py-10"><SkeletonTaskList count={2} /></div>}>
+            {activeTab === 'ACCEPTED' && (
+              <ProgressTasksTab 
+                setModalMessage={setModalMessage}
+                setShowModal={setShowModal}
+              />
+            )}
+            
+            {activeTab === 'SUBMITTED' && (
+              <PendingReviewTasksTab
+                handleViewImage={handleViewImage}
+                setModalMessage={setModalMessage}
+                setShowModal={setShowModal}
+              />
+            )}
+            
+            {activeTab === 'COMPLETED' && (
+              <CompletedTasksTab
+                handleViewImage={handleViewImage}
+                setModalMessage={setModalMessage}
+                setShowModal={setShowModal}
+              />
+            )}
+            
+            {activeTab === 'SUB_Rejected' && (
+              <RejectedTasksTab
+                handleViewImage={handleViewImage}
+                setModalMessage={setModalMessage}
+                setShowModal={setShowModal}
+              />
+            )}
+          </Suspense>
         </div>
         
         {/* 任务提示 */}

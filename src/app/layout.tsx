@@ -3,6 +3,7 @@
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { ToastProvider, Toaster } from '@/components/ui/Toast';
+import ErrorBoundary from '@/components/error/ErrorBoundary';
 
 
 export const metadata = {
@@ -46,7 +47,9 @@ export default function RootLayout({
         'min-h-screen bg-gray-50 font-sans antialiased'
       )}>
         <ToastProvider>
-          {children}
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
           <Toaster />
         </ToastProvider>
       </body>

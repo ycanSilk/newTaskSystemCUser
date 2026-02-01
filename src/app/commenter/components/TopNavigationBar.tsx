@@ -173,25 +173,25 @@ export default function TopNavigationBar({ user }: TopNavigationBarProps) {
           </button>
         )}
         <div className="flex items-center space-x-1">
-          {isClient && <span className="text-xl font-medium">{getCurrentTitle()}</span>}
+          {isClient && <span className="text-lg sm:text-xl font-medium">{getCurrentTitle()}</span>}
         </div>
       </div>
-      <div className="flex items-center space-x-3" ref={dropdownRef}>
+      <div className="flex items-center space-x-2 sm:space-x-3" ref={dropdownRef}>
         <CustomerServiceButton 
-          buttonText="联系客服" 
+          buttonText="" 
           modalTitle="在线客服"
           CustomerServiceId="admin"
           className="text-white"
         />
       
-        <div className="mr-2 relative">
+        <div className="relative">
           {/* 通知图标按钮，点击跳转到通知页面 */}
           <button
             onClick={() => router.push('/commenter/notification')}
             className="cursor-pointer hover:bg-blue-600 rounded-full p-1 transition-colors"
             aria-label="通知"
           >
-            <BellOutlined className="text-3xl text-white" />
+            <BellOutlined className="text-2xl sm:text-3xl text-white" />
           </button>
           {/* 通知数量提示，只有当unread_count大于0时显示 */}
           {userWithUnreadCount && userWithUnreadCount.unread_count > 0 && (
@@ -202,10 +202,10 @@ export default function TopNavigationBar({ user }: TopNavigationBarProps) {
         </div>
 
         {/* 用户头像和下拉菜单 */}
-        <div className="relative ml-3">
+        <div className="relative">
           <button 
             onClick={() => setShowDropdown(!showDropdown)}
-            className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors duration-200"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors duration-200"
             aria-label="用户菜单"
           >
             <img 

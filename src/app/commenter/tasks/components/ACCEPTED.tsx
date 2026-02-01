@@ -207,7 +207,10 @@ const ProgressTasksTab: React.FC<ProgressTasksTabProps> = ({
         textArea.setSelectionRange(0, text.length);
       } else {
         // 对于不支持setSelectionRange的浏览器
-        (textArea as any).createTextRange().select();
+          interface TextAreaWithCreateTextRange extends HTMLTextAreaElement {
+            createTextRange: () => Range;
+          }
+          (textArea as TextAreaWithCreateTextRange).createTextRange().select();
       }
       
       try {

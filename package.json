@@ -9,9 +9,14 @@
     "start": "cross-env NODE_ENV=production next start -p 8890",
     "build:clean": "rimraf .next && cross-env NODE_ENV=production next build",
     "start:clean": "rimraf .next && cross-env NODE_ENV=production next build && cross-env NODE_ENV=production next start -p 8890",
+    "deploy": "npm run build:clean && npm run start",
+    "deploy:test": "cross-env NODE_ENV=test npm run build:clean && cross-env NODE_ENV=test npm run start -p 8891",
+    "deploy:prod": "cross-env NODE_ENV=production npm run build:clean && cross-env NODE_ENV=production npm run start -p 8890",
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
     "lint:next": "next lint",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "analyze": "cross-env ANALYZE=true npm run build",
+    "predeploy": "npm run type-check && npm run lint"
   },
   "dependencies": {
     "@ant-design/icons": "^6.0.0",

@@ -8,6 +8,8 @@ import { AxiosRequestConfig } from 'axios';
 import { cookies } from 'next/headers';
 // 导入API配置，使用里面的默认请求头和token配置
 import { apiConfig } from '@/api/client/config';
+// 导入速率限制器
+import { globalRateLimiter } from './rateLimiter';
 
 /**
  * 请求拦截器函数
@@ -18,6 +20,15 @@ export const requestInterceptor = async (config: AxiosRequestConfig): Promise<Ax
   // 确保config对象存在，如果不存在就创建一个空对象
   if (!config) {
     config = {};
+  }
+  
+  // 检查请求频率限制
+  if (config.url) {
+    const isAllowed = globalRateLimiter.check(config.url);
+    if (!isAllowed) {
+      // 超过频率限制，拒绝请求
+      throw new Error(`Rate limit exceeded for ${config.url}`);
+    }
   }
   
   // 确保headers对象存在，如果不存在就创建一个空对象
