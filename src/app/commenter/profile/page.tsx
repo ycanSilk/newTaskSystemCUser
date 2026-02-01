@@ -43,7 +43,6 @@ export default function commenterProfilePage() {
     }
   }, [currentUser, setUser]);
   
-  console.log("读取到的用户信息", currentUser)
   useEffect(() => {
     
     // 从localStorage读取未读通知状态

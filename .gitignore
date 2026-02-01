@@ -51,3 +51,13 @@ coverage/
 yarn.lock
 .npmrc
 src/goflylivechat/
+
+# Trae IDE files
+.trae/
+
+# Build and cache files
+build/
+cache/
+
+# OS generated files
+Thumbs.db:encryptable
